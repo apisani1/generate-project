@@ -3,12 +3,15 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "generate-project"
+name = "npp"
 version = "0.0.0"
-description = "A short description of the project"
+description = "A Python project generator using cookiecutter templates"
 authors = ["Antonio Pisani <antonio.pisani@gmail.com>"]
 readme = "README.md"
 packages = [{ include = "generate_project", from = "src" }]
+
+[tool.poetry.scripts]
+npp = "generate_project.main:main"
 
 [tool.poetry.urls]
 "Source Code" = "https://github.com/apisani1/generate-project"
@@ -25,13 +28,15 @@ version_variable = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
+cookiecutter = "^2.6.0"
+python-dotenv = "^1.1.0"
+
 
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-ipykernel = "^6.29.5"
-python-dotenv = "^1.1.0"
+
 
 [tool.poetry.group.test]
 optional = true
