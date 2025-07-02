@@ -1,0 +1,405 @@
+#!/usr/bin/env python3
+"""
+Python project generator using cookiecutter templates.
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+from enum import Enum
+from pathlib import Path
+from typing import (
+    Dict,
+    List,
+    Optional,
+)
+
+from dotenv import (
+    find_dotenv,
+    load_dotenv,
+)
+
+
+class Colors(Enum):
+    """ANSI color codes for terminal output."""
+
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    RED = "\033[0;31m"
+    BLUE = "\033[0;34m"
+    NC = "\033[0m"  # No Color
+
+
+def print_colored(message: str, color: Colors = Colors.NC) -> None:
+    """Print message with color."""
+    print(f"{color.value}{message}{Colors.NC.value}")
+
+
+def run_command(
+    cmd: List[str], cwd: Optional[Path] = None, check: bool = True, input: Optional[str] = None
+) -> subprocess.CompletedProcess:
+    """Run a command with error handling."""
+    try:
+        return subprocess.run(cmd, cwd=cwd, check=check, capture_output=True, text=True, input=input)
+    except subprocess.CalledProcessError as e:
+        print_colored(f"Command failed: {' '.join(cmd)}", Colors.RED)
+        if e.stderr:
+            print_colored(f"Error: {e.stderr}", Colors.RED)
+        raise
+
+
+def check_github_cli() -> bool:
+    """Check if GitHub CLI is available and authenticated."""
+    try:
+        run_command(["gh", "repo", "list"])
+        return True
+    except FileNotFoundError:
+        print_colored("Error: GitHub CLI (gh) not installed.", Colors.RED)
+        print_colored("Install it from: https://cli.github.com/", Colors.YELLOW)
+        return False
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.lower().strip() if e.stderr else ""
+        stdout = e.stdout.lower().strip() if e.stdout else ""
+        combined_output = f"{stdout}\n{stderr}"
+        if "not logged into" in combined_output or "authentication" in combined_output:
+            print_colored("Error: GitHub CLI not authenticated.", Colors.RED)
+            print_colored("Run: gh auth login", Colors.YELLOW)
+        elif "network" in combined_output or "connection" in combined_output:
+            print_colored("Error: Network connection issues.", Colors.RED)
+            print_colored("Check your internet connection and try again.", Colors.YELLOW)
+        else:
+            print_colored("Error: GitHub CLI check failed.", Colors.RED)
+            print_colored("Run: gh auth status", Colors.YELLOW)
+            if e.stderr:
+                print_colored(f"Details: {e.stderr.strip()}", Colors.YELLOW)
+
+        return False
+
+
+def create_github_secrets(secrets: list[str], project_name: str) -> None:
+    """Create GitHub repository secrets from environment variables."""
+    print_colored("Creating GitHub repository secrets...", Colors.YELLOW)
+
+    created_count = 0
+    skipped_count = 0
+
+    for secret_name in secrets:
+        secret_value = os.environ.get(secret_name)
+
+        if not secret_value:
+            print_colored(f"  ⚠️  Skipping {secret_name} (not defined in environment)", Colors.YELLOW)
+            skipped_count += 1
+            continue
+
+        try:
+            # Create the secret in GitHub repository
+            run_command(["gh", "secret", "set", secret_name, "--repo", project_name], input=secret_value)
+            print_colored(f"  ✅ Created secret: {secret_name}", Colors.GREEN)
+            created_count += 1
+        except subprocess.CalledProcessError:
+            print_colored(f"  ❌ Failed to create secret: {secret_name}", Colors.RED)
+            skipped_count += 1
+
+    print_colored(f"Secrets summary: {created_count} created, {skipped_count} skipped", Colors.BLUE)
+    if created_count > 0:
+        print_colored("Repository secrets created successfully!", Colors.GREEN)
+        print_colored(f"You can view them at: https://github.com/{project_name}/settings/secrets/actions", Colors.BLUE)
+
+
+PYPIRC_FILE_TEMPLATE = """[distutils]
+index-servers =
+    pypi
+    testpypi
+
+[pypi]
+repository = https://upload.pypi.org/legacy/
+username = __token__
+password = {pypi_token}
+
+[testpypi]
+repository = https://test.pypi.org/legacy/
+username = __token__
+password = {test_token}
+"""
+
+
+def create_pypirc_file(project_dir: Path) -> None:
+    """Create .pypirc file from environment variables."""
+    print_colored(f"Creating .pypirc file in {project_dir} from environment variables...", Colors.YELLOW)
+
+    test_token = os.environ.get("TEST_PYPI_TOKEN")
+    pypi_token = os.environ.get("PYPI_TOKEN")
+
+    print(f"*******{pypi_token}")
+    print(f"*******{test_token}")
+
+    if not test_token and not pypi_token:
+        print_colored("  ⚠️  No PyPI tokens found in environment, skipping .pypirc creation", Colors.YELLOW)
+        return
+
+    pypirc_path = project_dir / ".pypirc"
+
+    # Backup existing file
+    if pypirc_path.exists():
+        print_colored("  ⚠️  .pypirc already exists, backing up to .pypirc.backup", Colors.YELLOW)
+        pypirc_path.rename(project_dir / ".pypirc.backup")
+
+    # Create .pypirc content
+    pypirc_content = PYPIRC_FILE_TEMPLATE.format(
+        pypi_token=pypi_token or "your-pypi-token-here", test_token=test_token or "your-test-pypi-token-here"
+    )
+
+    # Write file with restricted permissions
+    pypirc_path.write_text(pypirc_content)
+    pypirc_path.chmod(0o600)
+
+    if pypi_token:
+        print_colored(f"  ✅ Added PyPI token to {pypirc_path}", Colors.GREEN)
+    else:
+        print_colored("  ⚠️  PyPI token placeholder added (update manually)", Colors.YELLOW)
+
+    if test_token:
+        print_colored(f"  ✅ Added TestPyPI token to {pypirc_path}", Colors.GREEN)
+    else:
+        print_colored("  ⚠️  TestPyPI token placeholder added (update manually)", Colors.YELLOW)
+
+    if pypi_token and test_token:
+        print_colored(f".pypirc file created successfully at {pypirc_path}!", Colors.GREEN)
+        print_colored("You can now use: make publish:test or make publish", Colors.BLUE)
+    else:
+        print_colored(
+            f".pypirc template created at {pypirc_path} - please update with your actual tokens", Colors.YELLOW
+        )
+
+
+def generate_project(
+    project_name: str,
+    template_path: Path,
+    env_file: Path,
+    install_deps: bool = True,
+    init_git: bool = True,
+    create_github: bool = True,
+    create_public: bool = False,
+    create_secrets: bool = True,
+    create_pypirc: bool = True,
+    **kwargs: Optional[Dict],
+) -> None:
+    """Main project generation logic."""
+    # Load environment file if needed
+    if create_secrets or create_pypirc:
+        if not load_dotenv(dotenv_path=env_file, override=True):
+            print_colored("Error: Cannot create secrets/pypirc without environment file", Colors.RED)
+            print_colored(f"Expected location: {env_file}", Colors.YELLOW)
+            print_colored("Use --env=FILE to specify a different location", Colors.YELLOW)
+            sys.exit(1)
+
+    print(f"************{env_file}")
+    test_token = os.environ.get("TEST_PYPI_TOKEN")
+    pypi_token = os.environ.get("PYPI_TOKEN")
+
+    print(f"*******{pypi_token}")
+    print(f"*******{test_token}")
+
+    # Ensure template exists
+    if not template_path.exists():
+        print_colored(f"Error: Cookiecutter template not found at {template_path}", Colors.RED)
+        sys.exit(1)
+
+    # Generate project
+    print_colored("Generating project structure...", Colors.YELLOW)
+    cookiecutter_cmd = [
+        "cookiecutter",
+        str(template_path),
+        f"project_name={project_name}",
+        "--no-input",
+    ]
+    for key, value in (kwargs or {}).items():
+        cookiecutter_cmd.append(f"{key}={value}")
+
+    try:
+        run_command(cookiecutter_cmd)
+    except subprocess.CalledProcessError:
+        print_colored("Error: Failed to generate project", Colors.RED)
+        sys.exit(1)
+
+    project_dir = Path(project_name)
+    if not project_dir.exists():
+        print_colored(f"Error: Project '{project_name}' was not created.", Colors.RED)
+        sys.exit(1)
+
+    # Create .pypirc file if requested (before changing directory)
+    if create_pypirc:
+        create_pypirc_file(project_dir)
+
+    # Change to project directory
+    os.chdir(project_dir)
+
+    # Install dependencies
+    if install_deps:
+        print_colored("Installing dependencies...", Colors.YELLOW)
+        try:
+            run_command(["poetry", "install"])
+        except subprocess.CalledProcessError:
+            print_colored("Warning: Poetry install failed", Colors.RED)
+
+    # Initialize Git
+    if init_git:
+        print_colored("Initializing Git repository...", Colors.YELLOW)
+        run_command(["git", "init"])
+        run_command(["git", "add", "."])
+        run_command(["git", "commit", "-m", "Initial commit"])
+
+        # Create GitHub repository
+        if create_github:
+            print_colored("Creating GitHub repository...", Colors.YELLOW)
+
+            if check_github_cli():
+                # Get GitHub username
+                result = run_command(["gh", "api", "user", "--jq", ".login"])
+                github_username = result.stdout.strip()
+                full_repo_name = f"{github_username}/{project_name}"
+
+                # Determine repository visibility
+                if create_public:
+                    repo_visibility = "--public"
+                    print_colored("Creating public GitHub repository...", Colors.BLUE)
+                else:
+                    repo_visibility = "--private"
+                    print_colored("Creating private GitHub repository...", Colors.BLUE)
+
+                # Create repository
+                run_command(["gh", "repo", "create", project_name, repo_visibility, "--source=.", "--remote=origin"])
+
+                # Push to repository
+                try:
+                    run_command(["git", "push", "-u", "origin", "main"])
+                except subprocess.CalledProcessError:
+                    try:
+                        run_command(["git", "push", "-u", "origin", "master"])
+                    except subprocess.CalledProcessError:
+                        print_colored("Warning: Failed to push to repository", Colors.YELLOW)
+
+                print_colored(f"GitHub repository created: https://github.com/{full_repo_name}", Colors.GREEN)
+
+                # Create secrets if requested
+                if create_secrets:
+                    create_github_secrets(["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"], full_repo_name)
+            else:
+                print_colored("GitHub repository creation failed due to CLI issues.", Colors.RED)
+        elif create_secrets:
+            print_colored("Warning: --secrets requires --github flag", Colors.YELLOW)
+
+    # Success message
+    print_colored(f"Project '{project_name}' has been successfully created!", Colors.GREEN)
+    print("To start working on your project:")
+    print(f"  cd {project_name}")
+    print("  poetry shell")
+
+    # Provide helpful tips
+    if create_github and not create_secrets:
+        print()
+        print_colored("💡 Tip: Add --secrets flag to automatically create repository secrets", Colors.BLUE)
+
+    if not create_pypirc and (create_secrets or create_github):
+        print_colored("💡 Tip: Add --pypirc flag to create .pypirc for local publishing", Colors.BLUE)
+
+    if create_github and not create_public:
+        print_colored("💡 Repository created as private. Use --public next time for public repositories", Colors.BLUE)
+
+    if create_pypirc or create_secrets:
+        print()
+        print_colored("🚀 Your project is ready for publishing!", Colors.GREEN)
+        if create_pypirc:
+            print("  Local: make publish:test  # Test on TestPyPI")
+            print("         make publish       # Publish to PyPI")
+        if create_secrets:
+            print("  Automated: git tag v1.0.0 && git push --tags")
+
+
+def main() -> None:
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description="Create a new Python project from cookiecutter templates",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Publishing Setup:
+  The script can set up both automated and manual publishing. Requires .env file with tokens.:
+  TEST_PYPI_TOKEN=pypi-...      Token for TestPyPI publishing
+  PYPI_TOKEN=pypi-...           Token for PyPI publishing
+  RTD_TOKEN=rtd_...             Token for ReadTheDocs publishing
+
+  GitHub Secrets (--secrets):
+  - Creates GitHub repository secrets from .env tokens
+
+  Local .pypirc (--pypirc):
+  - Creates .pypirc file for manual publishing
+  - Uses same tokens from .env file
+  - Enables 'make publish:test' and 'make publish'
+
+Examples:
+  %(prog)s my-project                              # Basic project
+  %(prog)s my-project --github                     # Create GitHub repo
+  %(prog)s my-project --public                     # Public GitHub repo
+  %(prog)s my-project --public --secrets --pypirc  # Full setup
+        """,
+    )
+
+    # Positional argument
+    parser.add_argument("project_name", help="Name of the project to create")
+
+    # Project configuration
+    parser.add_argument("--python", dest="python_version", default="^3.10", help="Python version (default: ^3.10)")
+    parser.add_argument("--version", default="0.0.0", help="Project initial version (default: 0.0.0)")
+    parser.add_argument(
+        "--description", default="A short description of the project", help="Project short description"
+    )
+
+    # Behavior flags
+    parser.add_argument("--no-install", dest="install_deps", action="store_false", help="Skip installing dependencies")
+    parser.add_argument("--no-git", dest="init_git", action="store_false", help="Skip Git initialization")
+
+    # GitHub integration
+    parser.add_argument(
+        "--github",
+        dest="create_github",
+        action="store_true",
+        help="Create private GitHub repository (requires gh CLI)",
+    )
+    parser.add_argument(
+        "--public",
+        dest="create_public",
+        action="store_true",
+        help="Create public GitHub repository (implies --github)",
+    )
+    parser.add_argument(
+        "--secrets", dest="create_secrets", action="store_true", help="Create GitHub repository secrets from .env"
+    )
+
+    # Publishing setup
+    parser.add_argument(
+        "--pypirc", dest="create_pypirc", action="store_true", help="Create .pypirc file from .env tokens"
+    )
+
+    # File paths
+    parser.add_argument("--env", dest="env_file", type=Path, help="Use specific .env file (default: ./.env)")
+    parser.add_argument("--template", dest="template_path", type=Path, help="Use a specific template path")
+
+    args = parser.parse_args()
+
+    # Set defaults that depend on script location
+    if args.env_file is None:
+        args.env_file = find_dotenv()
+    if args.template_path is None:
+        args.template_path = Path(__file__).parent / "templates" / "poetry-template"
+
+    # --public implies --github
+    if args.create_public:
+        args.create_github = True
+
+    # Generate the project
+    generate_project(**args.__dict__)
+
+
+if __name__ == "__main__":
+    main()
