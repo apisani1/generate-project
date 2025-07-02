@@ -46,6 +46,9 @@ pytest = "^7.4.0"
 pytest-asyncio = "^0.21.0"
 pytest-cov = "^6.1.0"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.poetry.group.lint]
 optional = true
 
@@ -79,9 +82,7 @@ doc8 = ">=0.8.0"
 line-length = 119
 extend-exclude = '''
 /(
-    {{cookiecutter.project_name}}/src
-  | {{cookiecutter.project_name}}/tests
-  | {{cookiecutter.project_name}}/docs
+    {{cookiecutter.project_name}}
 )/
 '''
 
