@@ -131,9 +131,6 @@ def create_pypirc_file(project_dir: Path) -> None:
     test_token = os.environ.get("TEST_PYPI_TOKEN")
     pypi_token = os.environ.get("PYPI_TOKEN")
 
-    print(f"*******{pypi_token}")
-    print(f"*******{test_token}")
-
     if not test_token and not pypi_token:
         print_colored("  ⚠️  No PyPI tokens found in environment, skipping .pypirc creation", Colors.YELLOW)
         return
@@ -179,10 +176,10 @@ def generate_project(
     env_file: Path,
     install_deps: bool = True,
     init_git: bool = True,
-    create_github: bool = True,
+    create_github: bool = False,
     create_public: bool = False,
-    create_secrets: bool = True,
-    create_pypirc: bool = True,
+    create_secrets: bool = False,
+    create_pypirc: bool = False,
     **kwargs: Optional[Dict],
 ) -> None:
     """Main project generation logic."""
@@ -193,13 +190,6 @@ def generate_project(
             print_colored(f"Expected location: {env_file}", Colors.YELLOW)
             print_colored("Use --env=FILE to specify a different location", Colors.YELLOW)
             sys.exit(1)
-
-    print(f"************{env_file}")
-    test_token = os.environ.get("TEST_PYPI_TOKEN")
-    pypi_token = os.environ.get("PYPI_TOKEN")
-
-    print(f"*******{pypi_token}")
-    print(f"*******{test_token}")
 
     # Ensure template exists
     if not template_path.exists():
@@ -294,7 +284,7 @@ def generate_project(
     print_colored(f"Project '{project_name}' has been successfully created!", Colors.GREEN)
     print("To start working on your project:")
     print(f"  cd {project_name}")
-    print("  poetry shell")
+    print("  make venv")
 
     # Provide helpful tips
     if create_github and not create_secrets:
@@ -315,6 +305,13 @@ def generate_project(
             print("         make publish       # Publish to PyPI")
         if create_secrets:
             print("  Automated: git tag v1.0.0 && git push --tags")
+
+
+def print_args(**kwargs: Optional[Dict]) -> None:
+    """Print the arguments for debugging."""
+    print_colored("Arguments received:", Colors.BLUE)
+    for key, value in kwargs.items():
+        print_colored(f"  {key}: {value}", Colors.YELLOW)
 
 
 def main() -> None:
@@ -398,7 +395,8 @@ Examples:
         args.create_github = True
 
     # Generate the project
-    generate_project(**args.__dict__)
+    print_args(**args.__dict__)
+    # generate_project(**args.__dict__)
 
 
 if __name__ == "__main__":
