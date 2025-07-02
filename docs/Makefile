@@ -6,7 +6,7 @@ SPHINXOPTS    ?=
 SPHINXBUILD   ?= poetry run sphinx-build
 SOURCEDIR     = .
 BUILDDIR      = _build
-PACKAGEDIR    = ../src/generate_project
+PACKAGEDIR    = ../src/npp
 
 # Put it first so that "make" without argument is like "make help".
 help:

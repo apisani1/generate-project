@@ -33,7 +33,7 @@ if src_dir.exists():
     sys.path.insert(0, str(src_dir))
 
 # Also add the specific package directory if it exists
-package_dir = src_dir / "generate_project"
+package_dir = src_dir / "npp"
 if package_dir.exists():
     sys.path.insert(0, str(package_dir))
 
@@ -156,7 +156,7 @@ autodoc_member_order = "bysource"  # Keep same order as in the source code
 
 # Simple mocking for straightforward imports
 autodoc_mock_imports = [  # type: ignore
-    
+
 ]
 
 # For more complex mocking where simple mocking isn't sufficient
@@ -167,7 +167,7 @@ class Mock(MagicMock):
 
 # Complex modules that need special handling
 MOCK_MODULES = [  # type: ignore
-    
+
 ]
 
 # Only update sys.modules if there are modules to mock

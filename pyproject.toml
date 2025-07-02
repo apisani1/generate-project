@@ -8,10 +8,10 @@ version = "0.1.0"
 description = "A Python project generator using cookiecutter templates"
 authors = ["Antonio Pisani <antonio.pisani@gmail.com>"]
 readme = "README.md"
-packages = [{ include = "generate_project", from = "src" }]
+packages = [{ include = "npp", from = "src" }]
 
 [tool.poetry.scripts]
-npp = "generate_project.main:main"
+npp = "npp.main:main"
 
 [tool.poetry.urls]
 "Source Code" = "https://github.com/apisani1/generate-project"
@@ -23,7 +23,7 @@ npp = "generate_project.main:main"
 version_variable = [
     "pyproject.toml:version",
     "docs/conf.py:release",
-    "src/generate_project/__init__.py:__version__",
+    "src/npp/__init__.py:__version__",
 ]
 
 [tool.poetry.dependencies]
