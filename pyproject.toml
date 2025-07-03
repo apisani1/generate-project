@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "generate-project"
-version = "1.0.1"
+version = "1.0.1.post1"
 description = "A Python project generator using cookiecutter templates"
 authors = ["Antonio Pisani <antonio.pisani@gmail.com>"]
 readme = "README.md"
