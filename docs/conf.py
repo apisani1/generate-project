@@ -33,7 +33,7 @@ if src_dir.exists():
     sys.path.insert(0, str(src_dir))
 
 # Also add the specific package directory if it exists
-package_dir = src_dir / "npp"
+package_dir = src_dir / "generate_project"
 if package_dir.exists():
     sys.path.insert(0, str(package_dir))
 

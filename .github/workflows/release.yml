@@ -111,10 +111,10 @@ jobs:
           source test_env/bin/activate
           pip install --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple \
-              npp
+              generate-project
           SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
           export PYTHONPATH="${SITE_PACKAGES}:${PYTHONPATH:-}"
-          python -c "import npp; print('Installed version: ' + npp.__version__)"
+          python -c "import generate_project; print('Installed version: ' + generate_project.__version__)"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
