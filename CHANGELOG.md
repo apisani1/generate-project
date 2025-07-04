@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1.post2] - 2025-07-04
+
+ ### Changes
+- Add test suite
+- Add user configuration file
+
+
 ## [1.0.1.post1] - 2025-07-03
 
  ### Changes
