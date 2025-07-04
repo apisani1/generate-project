@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1.post3] - 2025-07-04
+
+ ### Changes
+- Include template folder in the generated package
+
+
+
 ## [1.0.1.post2] - 2025-07-04
 
  ### Changes
