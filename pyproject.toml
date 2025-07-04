@@ -9,6 +9,7 @@ description = "A Python project generator using cookiecutter templates"
 authors = ["Antonio Pisani <antonio.pisani@gmail.com>"]
 readme = "README.md"
 packages = [{ include = "generate_project", from = "src" }]
+include = ["src/generate_project/templates/**/*"]
 
 [tool.poetry.scripts]
 generate-project = "generate_project.main:main"
