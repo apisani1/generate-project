@@ -554,7 +554,7 @@ def main() -> None:
 
         # Generate the project
         print_args(**args.__dict__)
-        # generate_project(**args.__dict__)
+        generate_project(**args.__dict__)
 
 
 if __name__ == "__main__":

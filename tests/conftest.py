@@ -2,6 +2,7 @@
 
 import os
 from contextlib import contextmanager
+from pathlib import Path
 from typing import (
     Any,
     Generator,
@@ -23,7 +24,7 @@ from tests.project_structure import custom_context
 # # ensure that `from tests ...` import statements work within the tests/ dir
 # sys.path.insert(0, str(TESTS_DIR_PARENT))
 
-TEMPLATE_DIR = "/Users/antonio/Desktop/AI/MyCode/generate-project/src/generate_project/templates/poetry-template"
+TEMPLATE_DIR = str(Path("./src/generate_project/templates/poetry-template").resolve())
 
 print(f"Using template directory: {TEMPLATE_DIR}")
 
