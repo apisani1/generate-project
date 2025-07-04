@@ -4,6 +4,7 @@ Python project generator using cookiecutter templates.
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -314,12 +315,115 @@ def print_args(**kwargs: Optional[Dict]) -> None:
         print_colored(f"  {key}: {value}", Colors.YELLOW)
 
 
-def main() -> None:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Create a new Python project from cookiecutter templates",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+def read_json_file(config_path: Path) -> dict:
+    """
+    Read a configuration file and return its contents as a dictionary.
+
+    Args:
+        config_path (Path): Path to the configuration file.
+
+    Returns:
+        dict: Configuration data as a dictionary.
+    """
+    if not config_path.exists():
+        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+
+    try:
+        with open(config_path, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        raise ValueError(f"Error reading configuration file: {e}")
+
+
+def read_ymal_file(config_path: Path) -> dict:
+    """
+    Read a YAML configuration file and return its contents as a dictionary.
+
+    Args:
+        config_path (Path): Path to the YAML configuration file.
+
+    Returns:
+        dict: Configuration data as a dictionary.
+    """
+
+    if not config_path.exists():
+        return {}
+
+    try:
+        import yaml
+    except ImportError:
+        raise ImportError("YAML support requires PyYAML. Install it with: pip install pyyaml")
+
+    try:
+        with open(config_path, "r") as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        raise ValueError(f"Error reading YAML configuration file: {e}")
+
+
+def overwrite_default_values(default_config: dict, user_config: dict) -> dict:
+    """
+    Overwrite default configuration values with user-provided values.
+    Args:
+        default_config (dict): The default configuration dictionary.
+        user_config (dict): The user-provided configuration dictionary.
+    Returns:
+        dict: The updated configuration dictionary with user values applied.
+    """
+    if not isinstance(default_config, dict):
+        raise ValueError("Default configuration must be a dictionary.")
+    if not isinstance(user_config, dict):
+        raise ValueError("User configuration must be a dictionary.")
+
+    updated_config = default_config.copy()
+    updated_config.update(user_config)
+    return updated_config
+
+
+def build_menu_from_config(parser: argparse.ArgumentParser, config: dict) -> None:
+    """
+    Build a menu from the provided configuration dictionary.
+
+    Args:
+        parser (argparse.ArgumentParser): The argument parser to which the menu will be added.
+        config (dict): A dictionary containing the menu configuration.
+    """
+    if not isinstance(config, dict):
+        raise ValueError("Config must be a dictionary.")
+
+    for key, value in config.items():
+        if not isinstance(value, str):
+            raise ValueError(f"Invalid configuration for key '{key}': expected string value.")
+        parser.add_argument(f"--{key}", type=str, default=value, help=f"Set {key} (default: {value})")
+
+
+def update_config_file(user_config_file_path: Path, cookiecutter_config: dict, user_config: dict, args: dict) -> None:
+    """
+    Update the user configuration file with the provided values.
+
+    Args:
+        user_config_file_path (Path): Path to the user configuration file.
+        cookiecutter_config (dict): The cookiecutter configuration.
+        user_config (dict): The current user configuration.
+        args (dict): Values to update the configuration.
+    """
+    try:
+        import yaml
+    except ImportError:
+        raise ImportError("YAML support requires PyYAML. Install it with: pip install pyyaml")
+
+    updated_config = user_config.copy()
+    for key, value in args.items():
+        if key == "project_name":
+            continue
+        if key in cookiecutter_config and value is not None:
+            updated_config[key] = value
+
+    with open(user_config_file_path, "w") as f:
+        yaml.dump({"default_context": updated_config}, f)
+
+
+EPILOG = """
 Publishing Setup:
   The script can set up both automated and manual publishing. Requires .env file with tokens.:
   TEST_PYPI_TOKEN=pypi-...      Token for TestPyPI publishing
@@ -339,64 +443,118 @@ Examples:
   %(prog)s my-project --github                     # Create GitHub repo
   %(prog)s my-project --public                     # Public GitHub repo
   %(prog)s my-project --public --secrets --pypirc  # Full setup
-        """,
+"""
+
+
+def main() -> None:
+    """Main entry point."""
+    # Read configuration files
+    global_config_file_path = Path(__file__).parent / "templates" / "poetry-template" / "cookiecutter.json"
+    cookiecutter_config = read_json_file(global_config_file_path)
+    user_config_file_path = Path(__file__).parent / "templates" / "config.yaml"
+    user_config = read_ymal_file(user_config_file_path).get("default_context", {})
+    config = overwrite_default_values(cookiecutter_config, user_config)
+
+    # Create main parser
+    parser = argparse.ArgumentParser(
+        description="Create and configure Python projects from cookiecutter templates",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    # Positional argument
-    parser.add_argument("project_name", help="Name of the project to create")
-
-    # Project configuration
-    parser.add_argument("--python", dest="python_version", default="^3.10", help="Python version (default: ^3.10)")
-    parser.add_argument("--version", default="0.0.0", help="Project initial version (default: 0.0.0)")
-    parser.add_argument(
-        "--description", default="A short description of the project", help="Project short description"
+    # Create subparsers
+    subparsers = parser.add_subparsers(
+        dest="command",
+        help="Available commands",
+        metavar="{generate,config}",
     )
 
-    # Behavior flags
-    parser.add_argument("--no-install", dest="install_deps", action="store_false", help="Skip installing dependencies")
-    parser.add_argument("--no-git", dest="init_git", action="store_false", help="Skip Git initialization")
+    # Create the generate subparser
+    generate_parser = subparsers.add_parser(
+        "generate",
+        help="Generate a new Python project",
+        description="Create a new Python project from cookiecutter templates",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=EPILOG,
+    )
 
-    # GitHub integration
-    parser.add_argument(
+    # Add project name as positional argument to generate command
+    generate_parser.add_argument("project_name", help="Name of the project to create")
+
+    # Add project configuration arguments to generate parser
+    build_menu_from_config(generate_parser, config)
+
+    # Add behavior flags to generate parser
+    generate_parser.add_argument(
+        "--no-install", dest="install_deps", action="store_false", help="Skip installing dependencies"
+    )
+    generate_parser.add_argument("--no-git", dest="init_git", action="store_false", help="Skip Git initialization")
+
+    # Add GitHub integration flags to generate parser
+    generate_parser.add_argument(
         "--github",
         dest="create_github",
-        action="store_true",
+        action="store_false",
         help="Create private GitHub repository (requires gh CLI)",
     )
-    parser.add_argument(
+    generate_parser.add_argument(
         "--public",
         dest="create_public",
-        action="store_true",
+        action="store_false",
         help="Create public GitHub repository (implies --github)",
     )
-    parser.add_argument(
-        "--secrets", dest="create_secrets", action="store_true", help="Create GitHub repository secrets from .env"
+    generate_parser.add_argument(
+        "--secrets", dest="create_secrets", action="store_false", help="Create GitHub repository secrets from .env"
     )
 
-    # Publishing setup
-    parser.add_argument(
-        "--pypirc", dest="create_pypirc", action="store_true", help="Create .pypirc file from .env tokens"
+    # Add publishing setup flags to generate parser
+    generate_parser.add_argument(
+        "--pypirc", dest="create_pypirc", action="store_false", help="Create .pypirc file from .env tokens"
     )
 
-    # File paths
-    parser.add_argument("--env", dest="env_file", type=Path, help="Use specific .env file (default: ./.env)")
-    parser.add_argument("--template", dest="template_path", type=Path, help="Use a specific template path")
+    # Add file path arguments to generate parser
+    generate_parser.add_argument("--env", dest="env_file", type=Path, help="Use specific .env file (default: ./.env)")
+    generate_parser.add_argument("--template", dest="template_path", type=Path, help="Use a specific template path")
 
+    # Create the config subparser
+    config_parser = subparsers.add_parser(
+        "config",
+        help="Configure default project parameters",
+        description="Set default values for project configuration parameters",
+    )
+
+    # Add only project configuration arguments to config parser
+    build_menu_from_config(config_parser, config)
+
+    # Parse arguments
     args = parser.parse_args()
 
-    # Set defaults that depend on script location
-    if args.env_file is None:
-        args.env_file = find_dotenv()
-    if args.template_path is None:
-        args.template_path = Path(__file__).parent / "templates" / "poetry-template"
+    # Handle case where no command is provided
+    if args.command is None:
+        parser.print_help()
+        sys.exit(1)
 
-    # --public implies --github
-    if args.create_public:
-        args.create_github = True
+    # Handle config command
+    if args.command == "config":
+        update_config_file(user_config_file_path, cookiecutter_config, user_config, args.__dict__)
+        print_colored("Configuration updated successfully!", Colors.GREEN)
+        print_colored(f"Updated file: {user_config_file_path}", Colors.BLUE)
+        sys.exit(0)
 
-    # Generate the project
-    print_args(**args.__dict__)
-    # generate_project(**args.__dict__)
+    # Handle generate command
+    elif args.command == "generate":
+        # Set defaults that depend on script location
+        if args.env_file is None:
+            args.env_file = find_dotenv()
+        if args.template_path is None:
+            args.template_path = Path(__file__).parent / "templates" / "poetry-template"
+
+        # --public implies --github
+        if args.create_public:
+            args.create_github = True
+
+        # Generate the project
+        print_args(**args.__dict__)
+        # generate_project(**args.__dict__)
 
 
 if __name__ == "__main__":
