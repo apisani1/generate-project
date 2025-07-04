@@ -43,9 +43,10 @@ optional = true
 optional = true
 
 [tool.poetry.group.test.dependencies]
-pytest = "^7.4.0"
-pytest-asyncio = "^0.21.0"
-pytest-cov = "^6.1.0"
+pytest = "^7.4.4"
+pytest-cookies = "^0.7.0"
+pytest-xdist = "^3.7.0"
+toml = "^0.10.2"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
