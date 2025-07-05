@@ -5,7 +5,7 @@ import subprocess
 
 import pytest
 
-import toml  # type: ignore[import-untyped]
+import toml
 from pytest_cookies.plugin import Result
 
 # Import inside_dir from conftest

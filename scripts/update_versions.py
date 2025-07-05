@@ -3,7 +3,7 @@ import re
 import sys
 from pathlib import Path
 
-import toml  # type: ignore[import-untyped]
+import toml
 
 
 def update_files(new_version: str, dry_run: bool = False) -> None:
