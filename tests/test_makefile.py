@@ -52,4 +52,4 @@ def test_makefile_check(default_project: Result) -> None:
         try:
             subprocess.run(["make", "check"], check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
-            pytest.fail(f"Failed to execute make check: {e.stderr}")
+            pytest.fail(f"Failed to execute make check\n{'>'*80}\n{e.stdout}\n{'<>'*40}\n{e.stderr}\n{'<'*80}")
