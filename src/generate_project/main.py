@@ -493,22 +493,22 @@ def main() -> None:
     generate_parser.add_argument(
         "--github",
         dest="create_github",
-        action="store_false",
+        action="store_true",
         help="Create private GitHub repository (requires gh CLI)",
     )
     generate_parser.add_argument(
         "--public",
         dest="create_public",
-        action="store_false",
+        action="store_true",
         help="Create public GitHub repository (implies --github)",
     )
     generate_parser.add_argument(
-        "--secrets", dest="create_secrets", action="store_false", help="Create GitHub repository secrets from .env"
+        "--secrets", dest="create_secrets", action="store_true", help="Create GitHub repository secrets from .env"
     )
 
     # Add publishing setup flags to generate parser
     generate_parser.add_argument(
-        "--pypirc", dest="create_pypirc", action="store_false", help="Create .pypirc file from .env tokens"
+        "--pypirc", dest="create_pypirc", action="store_true", help="Create .pypirc file from .env tokens"
     )
 
     # Add file path arguments to generate parser
