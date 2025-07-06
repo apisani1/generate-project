@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2] - 2025-07-06
+
+ ### Changes
+- Fix generate command flags
+- Add toml type stub
+
+
 ## [1.0.1.post3] - 2025-07-04
 
  ### Changes
