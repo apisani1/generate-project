@@ -158,8 +158,8 @@ make docs-live            # Start live preview server
 make docs-api             # Generate API docs
 
 # Releasing
-make build                # Build package
-make publish              # Publish to PyPI
+make build                # Build package locally
+make publish              # Publish to PyPI a package generate locally
 make release-minor        # Create a new release and bump the version
 ```
 

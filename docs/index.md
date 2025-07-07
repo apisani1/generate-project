@@ -1,36 +1,3 @@
-# generate-project
-
-A short description of the project
-
-## Overview
-
-This documentation covers the generate-project library.
-
-## Installation
-
-```bash
-pip install generate_project
-```
-
-Or, if you use Poetry:
-
-```bash
-poetry add generate_project
-```
-
-## Quick Start
-
-```python
-from generate_project import Example
-
-# Initialize
-example = Example()
-
-# Use the library
-result = example.run()
-print(result)
-```
-
 ```{toctree}
 :hidden:
 :maxdepth: 2
@@ -38,7 +5,7 @@ print(result)
 
 Home <self>
 Guides <guides/index>
-API Reference <api/index>
+API Reference <api/modules>
 ```
 
 ```{toctree}
