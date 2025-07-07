@@ -1,8 +1,3 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PyPI version](https://img.shields.io/pypi/v/generate-project.svg)](https://pypi.org/project/generate-project/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-3100/)
-[![Documentation Status](https://readthedocs.org/projects/generate-project/badge/?version=latest)](https://generate-project.readthedocs.io/en/latest/?badge=latest)
-
 # Generate Project 
 A Python project folder generator based on Poetry for dependency and package management. The generated folder provides everything you need to get started with a well-structured Python project, including formatting, linting, documentation, testing, and CI/CD integration.
 
@@ -174,4 +169,3 @@ You can customize this template by:
 
 ## License
 This project template is released under the MIT License. See the LICENSE file for details.
-
