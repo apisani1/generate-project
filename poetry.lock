@@ -1616,7 +1616,7 @@ version = "0.10.8.20240310"
 description = "Typing stubs for toml"
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "test"]
+groups = ["test"]
 files = [
     {file = "types-toml-0.10.8.20240310.tar.gz", hash = "sha256:3d41501302972436a6b8b239c850b26689657e25281b48ff0ec06345b8830331"},
     {file = "types_toml-0.10.8.20240310-py3-none-any.whl", hash = "sha256:627b47775d25fa29977d9c70dc0cbab3f314f32c8d8d0c012f2ef5de7aaec05d"},
@@ -1656,4 +1656,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "52e7868a8ad5cd41e6cf819653431500c2ca2e3aacb307befe7b76cb716cd5e0"
+content-hash = "e105139f78d0c968fabcf141d84aaa974262c583d3686498543799ce4abecc06"
