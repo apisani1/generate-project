@@ -1,3 +1,5 @@
+```{include} source/home.md
+
 ```{toctree}
 :hidden:
 :maxdepth: 2
