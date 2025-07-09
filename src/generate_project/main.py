@@ -553,7 +553,7 @@ def main() -> None:
             args.create_github = True
 
         # Generate the project
-        print_args(**args.__dict__)
+        # print_args(**args.__dict__)
         generate_project(**args.__dict__)
 
 

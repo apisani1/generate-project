@@ -91,28 +91,27 @@ The generated project will have the following structure:
 
 ```
 project-name/
-├── .github/                # GitHub Actions workflows
-│   ├── workflows/
-│   │   ├── docs.yml        # Documentation build and checks
-|   |   ├── tests.yml       # Code quality checks
-│   │   └── release.yml     # Release automation
-├── docs/                   # Sphinx documentation
-│   ├── api/                # Auto-generated API docs
-│   ├── guides/             # How-to guides
-│   ├── conf.py             # Sphinx configuration
-│   ├── index.md            # Documentation home page
-│   └── Makefile            # Documentation build tool
-├── src/                    # Source code
-│   └── your_package/       # Your package name
-│       └── init.py         # Package initialization
-├── tests/                  # Test suite
-│   └── init.py
-├── .gitignore              # Git ignore rules
-├── .readthedocs.yaml       # ReadTheDocs configuration
-├── LICENSE                 # MIT License
-├── Makefile                # Development tasks
-├── pyproject.toml          # Project configuration & dependencies
-└── README.md               # Project readme
+├── .github/workflows/         # GitHub Actions CI/CD
+│   ├── docs.yml               # Documentation building and testing
+│   ├── tests.yml              # Code quality and testing
+│   ├── release.yml            # Automated releases
+│   └── update_rtd.yml         # ReadTheDocs updates
+├── docs/                      # Sphinx documentation
+│   ├── api/                   # Auto-generated API docs
+│   ├── guides/                # User guides
+│   ├── conf.py                # Sphinx configuration
+│   └── index.md               # Documentation home
+├── src/package_name/          # Source code
+│   └── __init__.py            # Package initialization
+├── tests/                     # Test suite
+├── scripts/                   # Development scripts
+├── .gitignore                 # Git ignore rules
+├── .readthedocs.yaml          # ReadTheDocs configuration
+├── LICENSE                    # MIT License
+├── Makefile                   # Development commands
+├── pyproject.toml             # Project configuration
+├── run.sh                     # Development task runner
+└── README.md                  # Project documentation
 ```
 
   
@@ -174,4 +173,3 @@ You can customize this template by:
 
 ## License
 This project template is released under the MIT License. See the LICENSE file for details.
-
