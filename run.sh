@@ -389,10 +389,10 @@ function help:test {
 ######################
 
 # Generate API documentation automatically
-function docs:api {
-    echo "Generating API documentation..."
-    cd docs && poetry run sphinx-apidoc -o api ../src/generate_project -f
-}
+# function docs:api {
+#     echo "Generating API documentation..."
+#     cd docs && poetry run sphinx-apidoc -o api ../src/generate_project -f
+# }
 
 # Generate documentation
 function docs {
@@ -417,8 +417,7 @@ function docs:check {
 # Clean and rebuild documentation
 function docs:clean {
     echo "Cleaning documentation build files..."
-    cd docs && poetry run make clean
-    cd docs && poetry run make html
+    cd docs && poetry run make clean && poetry run make html
 }
 
 ######################
@@ -593,7 +592,7 @@ function help {
     echo "  help:tests            - Show detailed test help"
     echo ""
     echo "Documentation:"
-    echo "  docs:api             - Generate API documentation"
+    # echo "  docs:api             - Generate API documentation"
     echo "  docs                 - Build documentation"
     echo "  docs:live            - Start live documentation server"
     echo "  docs:check           - Check documentation quality"

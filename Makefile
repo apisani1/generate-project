@@ -137,8 +137,8 @@ help-test:
 ######################
 
 # Generate API documentation automatically
-docs-api:
-	@./run.sh docs:api
+# docs-api:
+# 	@./run.sh docs:api
 
 # Generate documentation
 docs:
@@ -243,7 +243,7 @@ help:
 	@echo '  make help-test            - Show help for pytest options'
 	@echo ''
 	@echo 'Documentation:'
-	@echo '  make docs-api             - Build API documentation'
+	# @echo '  make docs-api             - Build API documentation'
 	@echo '  make docs                 - Build documentation'
 	@echo '  make docs-live            - Start live documentation server'
 	@echo '  make docs-check           - Check documentation quality'

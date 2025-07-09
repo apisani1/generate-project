@@ -4,7 +4,6 @@ DOCS_PATH = "./docs/source/"
 ELEMENTS = [
     ("badges", "", ""),
     ("home", "", ""),
-    ("guides", "", ""),
 ]
 
 
