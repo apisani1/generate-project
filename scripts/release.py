@@ -152,7 +152,13 @@ def get_commits_since_tag(tag: Optional[str]) -> list[str]:
 
 def get_current_version(project_file: str) -> Version:
     """Get current version from project file"""
-    version_text = read_from_toml_file(project_file, "poetry", "version")
+    # Try PEP 621 format first (project.version)
+    version_text = read_from_toml_file(project_file, "project", "version")
+
+    # Fall back to Poetry format (tool.poetry.version)
+    if not version_text:
+        version_text = read_from_toml_file(project_file, "poetry", "version")
+
     if not version_text:
         logger.error(f"Could not find version in '{project_file}'. Please check the file format.")
         raise ValueError(f"Version not found in '{project_file}'. Please check the file format.")
@@ -183,9 +189,15 @@ def read_from_toml_file(file_path: str, section: str, key: str) -> Optional[str]
     try:
         with open(toml_file, "rb") as f:
             toml_data = tomllib.load(f)
-        value = toml_data.get("tool").get(section, {}).get(key)
+        # Support both PEP 621 format (project.version) and Poetry format (tool.poetry.version)
+        if section == "project":
+            # PEP 621 format: read from root level
+            value = toml_data.get(section, {}).get(key)
+        else:
+            # Poetry format: read from tool section
+            value = toml_data.get("tool", {}).get(section, {}).get(key)
         if not value:
-            logger.warning(f"'{key}' field of section 'tool.{section}' not found in '{file_path}'.")
+            logger.warning(f"'{key}' field of section '{section}' not found in '{file_path}'.")
         return value
     except Exception as e:
         logger.error(f"Error reading '{key}' field of section 'tool.{section}' from {file_path}: {e}")
@@ -298,9 +310,21 @@ def update_version_files(project_file: str, new_version: Version) -> None:
                 logger.warning(f"'{file_path}' does not exist, skipping.")
                 continue
             content = file.read_text()
-            new_content, found = re.subn(
-                rf'{version_key} = "[^"]+"', f'{version_key} = "{new_version}"', content, count=1
-            )
+            # Build pattern with capturing groups to preserve format
+            pattern = rf'({re.escape(version_key)})(\s*)([:=])(\s*)(["\']?)([^"\'<>\s\n]+)(["\']?)'
+
+            def replace_version(match: re.Match) -> str:
+                """Preserve the original format while updating the version."""
+                key = match.group(1)          # version_key
+                space1 = match.group(2)       # whitespace before separator
+                separator = match.group(3)    # : or =
+                space2 = match.group(4)       # whitespace after separator
+                open_quote = match.group(5)   # opening quote (", ', or empty)
+                close_quote = match.group(7)  # closing quote (", ', or empty)
+
+                return f'{key}{space1}{separator}{space2}{open_quote}{new_version}{close_quote}'
+
+            new_content, found = re.subn(pattern, replace_version, content, count=1)
             if found:
                 file.write_text(new_content)
                 updated_files.append(file_path)
