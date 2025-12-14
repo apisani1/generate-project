@@ -2,7 +2,7 @@
     "project_name": "my-project",
     "package_name": "{{ cookiecutter.project_name.lower().replace(' ', '_').replace('-', '_') }}",
     "author_name": "My Name",
-    "email": "My Email",
+    "email": "me@example.com",
     "github_username": "my-github-username",
     "version": "0.0.0",
     "description": "A short description of the project",

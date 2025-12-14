@@ -2,6 +2,24 @@
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[project]
+name = "{{ cookiecutter.project_name }}"
+version = "{{ cookiecutter.version }}"
+description = "{{ cookiecutter.description }}"
+authors = [{ name = "{{ cookiecutter.author_name }}", email = "{{ cookiecutter.email }}" }]
+readme = "README.md"
+requires-python = ">={{ cookiecutter.python_version.replace('^', '') }}"
+dependencies = []
+
+[project.scripts]
+{{ cookiecutter.package_name }} = "{{ cookiecutter.package_name }}.main:main"
+
+[project.urls]
+"Source Code" = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}"
+"Release Notes" = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}/releases"
+"Documentation" = "https://{{ cookiecutter.project_name }}.readthedocs.io/"
+"Issue Tracker" = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}/issues"
+
 [tool.poetry]
 name = "{{ cookiecutter.project_name }}"
 version = "{{ cookiecutter.version }}"
@@ -9,12 +27,6 @@ description = "{{ cookiecutter.description }}"
 authors = ["{{ cookiecutter.author_name }} <{{ cookiecutter.email }}>"]
 readme = "README.md"
 packages = [{ include = "{{ cookiecutter.package_name }}", from = "src" }]
-
-[tool.poetry.urls]
-"Source Code" = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}"
-"Release Notes" = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}/releases"
-"Documentation" = "https://{{ cookiecutter.project_name }}.readthedocs.io/"
-"Issue Tracker" = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}/issues"
 
 [tool.semantic_release]
 version_variable = [
