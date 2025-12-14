@@ -59,7 +59,6 @@ python = "^3.10"
 cookiecutter = "^2.6.0"
 python-dotenv = "^1.1.0"
 pyyaml = "^6.0.0"
-types-pyyaml = "^6.0.12"
 
 
 [tool.poetry.group.dev]
@@ -96,6 +95,7 @@ optional = true
 
 [tool.poetry.group.typing.dependencies]
 mypy = "^1.15"
+types-pyyaml = "^6.0.12.20250915"
 
 [tool.poetry.group.docs]
 optional = true
