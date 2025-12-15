@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3rc4] - 2025-12-15
+
+ ### Changes
+- refactor: simplify GitHub repository ownership check
+
+
+
 ## [1.0.3rc3] - 2025-12-15
 
  ### Changes
