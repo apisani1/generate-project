@@ -50,6 +50,43 @@ def run_command(
         raise
 
 
+def get_github_username() -> Optional[str]:
+    """Get the currently authenticated GitHub username."""
+    try:
+        result = run_command(["gh", "api", "user", "--jq", ".login"], check=False)
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def check_github_repo_exists(repo_name: str, username: str) -> tuple[bool, bool]:
+    """
+    Check if a GitHub repository exists and if the current user owns it.
+
+    Args:
+        repo_name: Name of the repository
+        username: GitHub username to check ownership
+
+    Returns:
+        Tuple of (exists, is_owned_by_user)
+    """
+    try:
+        # Try to view the repo - format: username/repo_name
+        result = run_command(["gh", "repo", "view", f"{username}/{repo_name}", "--json", "owner"], check=False)
+        if result.returncode == 0:
+            # Repo exists, check ownership
+            data = json.loads(result.stdout)
+            owner_login = data.get("owner", {}).get("login", "")
+            is_owned = owner_login.lower() == username.lower()
+            return True, is_owned
+    except Exception:
+        pass
+    # Repo doesn't exist (or other error)
+    return False, False
+
+
 def check_github_cli() -> bool:
     """Check if GitHub CLI is available and authenticated."""
     try:
@@ -245,10 +282,7 @@ def generate_project(
         if create_github:
             print_colored("Creating GitHub repository...", Colors.YELLOW)
 
-            if check_github_cli():
-                # Get GitHub username
-                result = run_command(["gh", "api", "user", "--jq", ".login"])
-                github_username = result.stdout.strip()
+            if check_github_cli() and (github_username := get_github_username()):
                 full_repo_name = f"{github_username}/{project_name}"
 
                 # Determine repository visibility
@@ -259,8 +293,34 @@ def generate_project(
                     repo_visibility = "--private"
                     print_colored("Creating private GitHub repository...", Colors.BLUE)
 
-                # Create repository
-                run_command(["gh", "repo", "create", project_name, repo_visibility, "--source=.", "--remote=origin"])
+                # Check if repo already exists
+                exists, is_owned = check_github_repo_exists(project_name, github_username)
+
+                if exists and is_owned:
+                    print_colored(f"Repository {full_repo_name} already exists and is owned by you.", Colors.YELLOW)
+                    print_colored("Skipping repository creation, will use existing repository.", Colors.YELLOW)
+
+                    # Add existing repo as remote if not already added
+                    try:
+                        run_command(
+                            ["git", "remote", "add", "origin", f"git@github.com:{github_username}/{project_name}.git"],
+                            check=False,
+                        )
+                    except Exception:
+                        pass  # Remote might already exist
+                elif exists and not is_owned:
+                    print_colored(
+                        f"Error: Repository {full_repo_name} already exists but is not owned by you.", Colors.RED
+                    )
+                    print_colored(
+                        "Please choose a different project name or delete the existing repository.", Colors.RED
+                    )
+                    sys.exit(1)
+                else:
+                    # Repo doesn't exist, create it
+                    run_command(
+                        ["gh", "repo", "create", project_name, repo_visibility, "--source=.", "--remote=origin"]
+                    )
 
                 # Push to repository
                 try:
