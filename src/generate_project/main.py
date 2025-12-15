@@ -234,6 +234,14 @@ def generate_project(
         print_colored(f"Error: Cookiecutter template not found at {template_path}", Colors.RED)
         sys.exit(1)
 
+    # Check if project directory already exists
+    project_dir = Path(project_name)
+    if project_dir.exists():
+        print_colored(f"Error: Directory '{project_name}' already exists.", Colors.RED)
+        print_colored("Please choose a different project name or remove the existing directory:", Colors.YELLOW)
+        print_colored(f"  rm -rf {project_name}/", Colors.YELLOW)
+        sys.exit(1)
+
     # Generate project
     print_colored("Generating project structure...", Colors.YELLOW)
     cookiecutter_cmd = [
@@ -251,7 +259,6 @@ def generate_project(
         print_colored("Error: Failed to generate project", Colors.RED)
         sys.exit(1)
 
-    project_dir = Path(project_name)
     if not project_dir.exists():
         print_colored(f"Error: Project '{project_name}' was not created.", Colors.RED)
         sys.exit(1)
