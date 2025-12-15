@@ -61,30 +61,22 @@ def get_github_username() -> Optional[str]:
     return None
 
 
-def check_github_repo_exists(repo_name: str, username: str) -> tuple[bool, bool]:
+def check_github_repo_exists(repo_name: str, username: str) -> bool:
     """
-    Check if a GitHub repository exists and if the current user owns it.
+    Check if a GitHub repository exists under the authenticated user's account.
 
     Args:
         repo_name: Name of the repository
         username: GitHub username to check ownership
 
     Returns:
-        Tuple of (exists, is_owned_by_user)
+        True if the repository exists, False otherwise
     """
     try:
-        # Try to view the repo - format: username/repo_name
-        result = run_command(["gh", "repo", "view", f"{username}/{repo_name}", "--json", "owner"], check=False)
-        if result.returncode == 0:
-            # Repo exists, check ownership
-            data = json.loads(result.stdout)
-            owner_login = data.get("owner", {}).get("login", "")
-            is_owned = owner_login.lower() == username.lower()
-            return True, is_owned
+        result = run_command(["gh", "repo", "view", f"{username}/{repo_name}"], check=False)
+        return result.returncode == 0
     except Exception:
-        pass
-    # Repo doesn't exist (or other error)
-    return False, False
+        return False
 
 
 def check_github_cli() -> bool:
@@ -301,10 +293,8 @@ def generate_project(
                     print_colored("Creating private GitHub repository...", Colors.BLUE)
 
                 # Check if repo already exists
-                exists, is_owned = check_github_repo_exists(project_name, github_username)
-
-                if exists and is_owned:
-                    print_colored(f"Repository {full_repo_name} already exists and is owned by you.", Colors.YELLOW)
+                if check_github_repo_exists(project_name, github_username):
+                    print_colored(f"Repository {full_repo_name} already exists.", Colors.YELLOW)
                     print_colored("Skipping repository creation, will use existing repository.", Colors.YELLOW)
 
                     # Add existing repo as remote if not already added
@@ -315,14 +305,6 @@ def generate_project(
                         )
                     except Exception:
                         pass  # Remote might already exist
-                elif exists and not is_owned:
-                    print_colored(
-                        f"Error: Repository {full_repo_name} already exists but is not owned by you.", Colors.RED
-                    )
-                    print_colored(
-                        "Please choose a different project name or delete the existing repository.", Colors.RED
-                    )
-                    sys.exit(1)
                 else:
                     # Repo doesn't exist, create it
                     run_command(
