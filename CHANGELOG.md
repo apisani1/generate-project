@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3rc1] - 2025-12-15
+
+ ### Changes
+- feat: activate ReadTheDocs for all version tags
+- feat: modernize project with PEP 621 dual format (root + template)
+  
+
+
 ## [1.0.2.post1] - 2025-07-09
 
  ### Changes
