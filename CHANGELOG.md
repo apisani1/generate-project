@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3rc3] - 2025-12-15
+
+ ### Changes
+- 🐛 fix: improve error message when directory already exists
+
+
+
 ## [1.0.3rc2] - 2025-12-15
 
  ### Changes
