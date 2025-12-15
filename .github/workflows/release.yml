@@ -134,9 +134,9 @@ jobs:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
         run: ./run.sh publish
 
-      # Only update ReadTheDocs for stable releases
+      # Update ReadTheDocs for all tagged versions
+      # Note: Set RTD default version to "stable" in project settings for best UX
       - name: Update ReadTheDocs
-        if: steps.release-info.outputs.release_type == 'release'
         run: |
           TAG_NAME=${{ steps.release-info.outputs.tag_name }}
           echo "Activating version $TAG_NAME via API..."
@@ -153,10 +153,9 @@ jobs:
           echo "- **Version**: ${{ steps.release-info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Type**: ${{ steps.release-info.outputs.release_type }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Latest**: ${{ steps.release-info.outputs.is_latest }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **ReadTheDocs**: ✅ Updated" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ steps.release-info.outputs.release_type }}" == "release" ]]; then
             echo "- **PyPI**: ✅ Published" >> $GITHUB_STEP_SUMMARY
-            echo "- **ReadTheDocs**: ✅ Updated" >> $GITHUB_STEP_SUMMARY
           else
             echo "- **PyPI**: ⏭️ Skipped (not a stable release)" >> $GITHUB_STEP_SUMMARY
-            echo "- **ReadTheDocs**: ⏭️ Skipped (not a stable release)" >> $GITHUB_STEP_SUMMARY
           fi
