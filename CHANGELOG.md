@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3rc2] - 2025-12-15
+
+ ### Changes
+- 🐛 fix: prevent crash when GitHub repository already exists
+
+
+
 ## [1.0.3rc1] - 2025-12-15
 
  ### Changes
