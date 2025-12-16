@@ -139,66 +139,79 @@ def create_github_secrets(secrets: list[str], project_name: str) -> None:
         )
 
 
-PYPIRC_FILE_TEMPLATE = """[distutils]
-index-servers =
-    pypi
-    testpypi
+ENV_FILE_TEMPLATE = """# PyPI Authentication for Poetry
+# Poetry uses these environment variables for publishing
+# Get tokens from: https://pypi.org/manage/account/token/
 
-[pypi]
-repository = https://upload.pypi.org/legacy/
-username = __token__
-password = {pypi_token}
+POETRY_PYPI_TOKEN_PYPI={pypi_token}
+POETRY_PYPI_TOKEN_TESTPYPI={test_token}
 
-[testpypi]
-repository = https://test.pypi.org/legacy/
-username = __token__
-password = {test_token}
+# ReadTheDocs Token (optional)
+# Get from: https://readthedocs.org/accounts/tokens/
+RTD_TOKEN=
+
+# GitHub Token (optional, for gh CLI)
+# Get from: https://github.com/settings/tokens
+GITHUB_TOKEN=
 """
 
 
-def create_pypirc_file(project_dir: Path) -> None:
-    """Create .pypirc file from environment variables."""
-    print_colored(f"Creating .pypirc file in {project_dir} from environment variables...", Colors.BLUE)
+def generate_env_file(project_dir: Path, show_deprecation: bool = False) -> None:
+    """Generate .env file from environment variables.
 
-    test_token = os.environ.get("TEST_PYPI_TOKEN")
-    pypi_token = os.environ.get("PYPI_TOKEN")
+    Args:
+        project_dir: Directory where .env file will be created
+        show_deprecation: If True, show deprecation warning for --pypirc flag
+    """
+    if show_deprecation:
+        print_colored("⚠️  Warning: --pypirc flag is deprecated and will be removed in v2.0.0", Colors.YELLOW)
+        print_colored("   Poetry uses .env files, not .pypirc", Colors.YELLOW)
+        print_colored("   In the future, just copy .env.example to .env", Colors.YELLOW)
+        print_colored("", Colors.YELLOW)  # Empty line for readability
 
-    if not test_token and not pypi_token:
-        print_colored("  ⚠️  No PyPI tokens found in environment, skipping .pypirc creation", Colors.YELLOW)
-        return
+    print_colored(f"Creating .env file in {project_dir} from environment variables...", Colors.BLUE)
 
-    pypirc_path = project_dir / ".pypirc"
+    # Check if we have tokens in environment (support both old and new variable names)
+    pypi_token = os.getenv("POETRY_PYPI_TOKEN_PYPI") or os.getenv("PYPI_TOKEN", "")
+    test_token = os.getenv("POETRY_PYPI_TOKEN_TESTPYPI") or os.getenv("TEST_PYPI_TOKEN", "")
+
+    if not pypi_token and not test_token:
+        print_colored("  ⚠️  No PyPI tokens found in environment", Colors.YELLOW)
+        print_colored("     Set POETRY_PYPI_TOKEN_PYPI or PYPI_TOKEN in your environment", Colors.YELLOW)
+        print_colored("     Creating .env template - please update with your tokens", Colors.YELLOW)
+
+    env_path = project_dir / ".env"
 
     # Backup existing file
-    if pypirc_path.exists():
-        print_colored("  ⚠️  .pypirc already exists, backing up to .pypirc.backup", Colors.YELLOW)
-        pypirc_path.rename(project_dir / ".pypirc.backup")
+    if env_path.exists():
+        print_colored("  ⚠️  .env already exists, backing up to .env.backup", Colors.YELLOW)
+        env_path.rename(project_dir / ".env.backup")
 
-    # Create .pypirc content
-    pypirc_content = PYPIRC_FILE_TEMPLATE.format(
-        pypi_token=pypi_token or "your-pypi-token-here", test_token=test_token or "your-test-pypi-token-here"
+    # Create .env content
+    env_content = ENV_FILE_TEMPLATE.format(
+        pypi_token=pypi_token or "your-pypi-token-here", test_token=test_token or "your-testpypi-token-here"
     )
 
     # Write file with restricted permissions
-    pypirc_path.write_text(pypirc_content)
-    pypirc_path.chmod(0o600)
+    env_path.write_text(env_content)
+    env_path.chmod(0o600)
 
     if pypi_token:
-        print_colored(f"  ✅ Added PyPI token to {pypirc_path}", Colors.GREEN)
+        print_colored(f"  ✅ Added POETRY_PYPI_TOKEN_PYPI to {env_path}", Colors.GREEN)
     else:
-        print_colored("  ⚠️  PyPI token placeholder added (update manually)", Colors.YELLOW)
+        print_colored("  ℹ️  POETRY_PYPI_TOKEN_PYPI placeholder added (update manually)", Colors.BLUE)
 
     if test_token:
-        print_colored(f"  ✅ Added TestPyPI token to {pypirc_path}", Colors.GREEN)
+        print_colored(f"  ✅ Added POETRY_PYPI_TOKEN_TESTPYPI to {env_path}", Colors.GREEN)
     else:
-        print_colored("  ⚠️  TestPyPI token placeholder added (update manually)", Colors.YELLOW)
+        print_colored("  ℹ️  POETRY_PYPI_TOKEN_TESTPYPI placeholder added (update manually)", Colors.BLUE)
 
     if pypi_token and test_token:
-        print_colored(f".pypirc file created successfully at {pypirc_path}!", Colors.GREEN)
+        print_colored(f".env file created successfully at {env_path}!", Colors.GREEN)
     else:
-        print_colored(
-            f".pypirc template created at {pypirc_path} - please update with your actual tokens", Colors.YELLOW
-        )
+        print_colored(f".env template created at {env_path} - please update with your actual tokens", Colors.YELLOW)
+
+    print_colored("💡 Tip: Add .env to .gitignore (should already be there)", Colors.BLUE)
 
 
 def generate_project(
@@ -210,14 +223,14 @@ def generate_project(
     create_github: bool = False,
     create_public: bool = False,
     create_secrets: bool = False,
-    create_pypirc: bool = False,
+    create_env: bool = False,
     **kwargs: Optional[Dict],
 ) -> None:
     """Main project generation logic."""
     # Load environment file if needed
-    if create_secrets or create_pypirc:
+    if create_secrets or create_env:
         if not load_dotenv(dotenv_path=env_file, override=True):
-            print_colored("Error: Cannot create secrets/pypirc without environment file", Colors.RED)
+            print_colored("Error: Cannot create secrets/.env without environment file", Colors.RED)
             print_colored(f"Expected location: {env_file}", Colors.RED)
             print_colored("Use --env=FILE to specify a different location", Colors.RED)
             sys.exit(1)
@@ -256,9 +269,10 @@ def generate_project(
         print_colored(f"Error: Project '{project_name}' was not created.", Colors.RED)
         sys.exit(1)
 
-    # Create .pypirc file if requested (before changing directory)
-    if create_pypirc:
-        create_pypirc_file(project_dir)
+    # Create .env file if requested (before changing directory)
+    if create_env:
+        # show_deprecation=True if called via --pypirc flag (deprecated)
+        generate_env_file(project_dir, show_deprecation=create_env == "deprecated")
 
     # Change to project directory
     os.chdir(project_dir)
@@ -325,7 +339,9 @@ def generate_project(
 
                 # Create secrets if requested
                 if create_secrets:
-                    create_github_secrets(["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"], full_repo_name)
+                    create_github_secrets(
+                        ["POETRY_PYPI_TOKEN_PYPI", "POETRY_PYPI_TOKEN_TESTPYPI", "RTD_TOKEN"], full_repo_name
+                    )
             else:
                 print_colored("GitHub repository creation failed due to CLI issues.", Colors.RED)
         elif create_secrets:
@@ -342,15 +358,16 @@ def generate_project(
         print()
         print_colored("💡 Tip: Add --secrets flag to automatically create repository secrets", Colors.BLUE)
 
-    if not create_pypirc and (create_secrets or create_github):
-        print_colored("💡 Tip: Add --pypirc flag to create .pypirc for local publishing", Colors.BLUE)
+    if not create_env and (create_secrets or create_github):
+        print_colored("💡 Tip: Use --pypirc flag to create .env for local publishing", Colors.BLUE)
+        print_colored("   (Note: --pypirc is deprecated, just copy .env.example to .env)", Colors.YELLOW)
 
     if create_github and not create_public:
         print_colored(
             "💡 Tip: Repository created as private. Use --public next time for public repositories", Colors.BLUE
         )
 
-    if create_pypirc or create_secrets:
+    if create_env or create_secrets:
         print()
         print("🚀 Your project is ready for publishing!")
         print("  Manual:    make build")
@@ -477,24 +494,24 @@ def update_config_file(user_config_file_path: Path, cookiecutter_config: dict, u
 
 EPILOG = """
 Publishing Setup:
-  The script can set up both automated and manual publishing. Requires .env file with tokens.:
-  TEST_PYPI_TOKEN=pypi-...      Token for TestPyPI publishing
-  PYPI_TOKEN=pypi-...           Token for PyPI publishing
-  RTD_TOKEN=rtd_...             Token for ReadTheDocs publishing
+  The script can set up both automated and manual publishing. Requires .env file with tokens:
+  POETRY_PYPI_TOKEN_PYPI=pypi-...           Token for PyPI publishing
+  POETRY_PYPI_TOKEN_TESTPYPI=pypi-...       Token for TestPyPI publishing
+  RTD_TOKEN=rtd_...                         Token for ReadTheDocs publishing
 
   GitHub Secrets (--secrets):
   - Creates GitHub repository secrets from .env tokens
 
-  Local .pypirc (--pypirc):
-  - Creates .pypirc file for manual publishing
-  - Uses same tokens from .env file
-  - Enables 'make publish:test' and 'make publish'
+  Local Publishing Setup (--pypirc, DEPRECATED):
+  - Creates .env file for local publishing (Poetry uses environment variables)
+  - Recommended: Just copy .env.example to .env and add your tokens
+  - Enables 'make publish-test' and 'make publish'
 
 Examples:
   %(prog)s my-project                              # Basic project
   %(prog)s my-project --github                     # Create GitHub repo
   %(prog)s my-project --public                     # Public GitHub repo
-  %(prog)s my-project --public --secrets --pypirc  # Full setup
+  %(prog)s my-project --public --secrets --pypirc  # Full setup (--pypirc deprecated)
 """
 
 
@@ -560,7 +577,11 @@ def main() -> None:
 
     # Add publishing setup flags to generate parser
     generate_parser.add_argument(
-        "--pypirc", dest="create_pypirc", action="store_true", help="Create .pypirc file from .env tokens"
+        "--pypirc",
+        dest="create_env",
+        action="store_const",
+        const="deprecated",
+        help="(DEPRECATED) Create .env file from environment tokens. Use .env.example instead",
     )
 
     # Add file path arguments to generate parser
