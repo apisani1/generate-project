@@ -417,8 +417,7 @@ function docs:check {
 # Clean and rebuild documentation
 function docs:clean {
     echo "Cleaning documentation build files..."
-    cd docs && poetry run make clean
-    cd docs && poetry run make html
+    cd docs && poetry run make clean && poetry run make html
 }
 
 ######################
