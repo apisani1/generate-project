@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3rc5] - 2025-12-15
+
+ ### Changes
+- 💄 style: improve color consistency in terminal output
+
+
+
 ## [1.0.3rc4] - 2025-12-15
 
  ### Changes
