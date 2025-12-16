@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3rc8] - 2025-12-16
+
+ ### Changes
+- 🔧 fix: revert workflow secret names and map env vars correctly
+- 🐛 fix: replace .pypirc with .env for Poetry authentication
+
+
+
 ## [1.0.3rc7] - 2025-12-16
 
  ### Changes
