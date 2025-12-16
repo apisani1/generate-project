@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3rc7] - 2025-12-16
+
+ ### Changes
+- 🐛 fix: add v2 prefix to Poetry cache keys to force invalidation
+- 🐛 fix: include poetry.lock in CI cache key for proper invalidation
+- 🐛 fix: add roman package for Sphinx/Python 3.13 compatibility
+
+
 ## [1.0.3rc6] - 2025-12-15
 
  ### Changes
