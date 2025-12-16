@@ -86,7 +86,7 @@ def check_github_cli() -> bool:
         return True
     except FileNotFoundError:
         print_colored("Error: GitHub CLI (gh) not installed.", Colors.RED)
-        print_colored("Install it from: https://cli.github.com/", Colors.YELLOW)
+        print_colored("Install it from: https://cli.github.com/", Colors.RED)
         return False
     except subprocess.CalledProcessError as e:
         stderr = e.stderr.lower().strip() if e.stderr else ""
@@ -94,22 +94,22 @@ def check_github_cli() -> bool:
         combined_output = f"{stdout}\n{stderr}"
         if "not logged into" in combined_output or "authentication" in combined_output:
             print_colored("Error: GitHub CLI not authenticated.", Colors.RED)
-            print_colored("Run: gh auth login", Colors.YELLOW)
+            print_colored("Run: gh auth login", Colors.RED)
         elif "network" in combined_output or "connection" in combined_output:
             print_colored("Error: Network connection issues.", Colors.RED)
-            print_colored("Check your internet connection and try again.", Colors.YELLOW)
+            print_colored("Check your internet connection and try again.", Colors.RED)
         else:
             print_colored("Error: GitHub CLI check failed.", Colors.RED)
-            print_colored("Run: gh auth status", Colors.YELLOW)
+            print_colored("Run: gh auth status", Colors.RED)
             if e.stderr:
-                print_colored(f"Details: {e.stderr.strip()}", Colors.YELLOW)
+                print_colored(f"Details: {e.stderr.strip()}", Colors.RED)
 
         return False
 
 
 def create_github_secrets(secrets: list[str], project_name: str) -> None:
     """Create GitHub repository secrets from environment variables."""
-    print_colored("Creating GitHub repository secrets...", Colors.YELLOW)
+    print_colored("Creating GitHub repository secrets...", Colors.BLUE)
 
     created_count = 0
     skipped_count = 0
@@ -134,7 +134,9 @@ def create_github_secrets(secrets: list[str], project_name: str) -> None:
     print_colored(f"Secrets summary: {created_count} created, {skipped_count} skipped", Colors.BLUE)
     if created_count > 0:
         print_colored("Repository secrets created successfully!", Colors.GREEN)
-        print_colored(f"You can view them at: https://github.com/{project_name}/settings/secrets/actions", Colors.BLUE)
+        print_colored(
+            f"You can view them at: https://github.com/{project_name}/settings/secrets/actions", Colors.GREEN
+        )
 
 
 PYPIRC_FILE_TEMPLATE = """[distutils]
@@ -156,7 +158,7 @@ password = {test_token}
 
 def create_pypirc_file(project_dir: Path) -> None:
     """Create .pypirc file from environment variables."""
-    print_colored(f"Creating .pypirc file in {project_dir} from environment variables...", Colors.YELLOW)
+    print_colored(f"Creating .pypirc file in {project_dir} from environment variables...", Colors.BLUE)
 
     test_token = os.environ.get("TEST_PYPI_TOKEN")
     pypi_token = os.environ.get("PYPI_TOKEN")
@@ -193,7 +195,6 @@ def create_pypirc_file(project_dir: Path) -> None:
 
     if pypi_token and test_token:
         print_colored(f".pypirc file created successfully at {pypirc_path}!", Colors.GREEN)
-        print_colored("You can now use: make publish:test or make publish", Colors.BLUE)
     else:
         print_colored(
             f".pypirc template created at {pypirc_path} - please update with your actual tokens", Colors.YELLOW
@@ -217,8 +218,8 @@ def generate_project(
     if create_secrets or create_pypirc:
         if not load_dotenv(dotenv_path=env_file, override=True):
             print_colored("Error: Cannot create secrets/pypirc without environment file", Colors.RED)
-            print_colored(f"Expected location: {env_file}", Colors.YELLOW)
-            print_colored("Use --env=FILE to specify a different location", Colors.YELLOW)
+            print_colored(f"Expected location: {env_file}", Colors.RED)
+            print_colored("Use --env=FILE to specify a different location", Colors.RED)
             sys.exit(1)
 
     # Ensure template exists
@@ -230,12 +231,12 @@ def generate_project(
     project_dir = Path(project_name)
     if project_dir.exists():
         print_colored(f"Error: Directory '{project_name}' already exists.", Colors.RED)
-        print_colored("Please choose a different project name or remove the existing directory:", Colors.YELLOW)
-        print_colored(f"  rm -rf {project_name}/", Colors.YELLOW)
+        print_colored("Please choose a different project name or remove the existing directory:", Colors.RED)
+        print_colored(f"  rm -rf {project_name}/", Colors.RED)
         sys.exit(1)
 
     # Generate project
-    print_colored("Generating project structure...", Colors.YELLOW)
+    print_colored("Generating project structure...", Colors.BLUE)
     cookiecutter_cmd = [
         "cookiecutter",
         str(template_path),
@@ -264,22 +265,22 @@ def generate_project(
 
     # Install dependencies
     if install_deps:
-        print_colored("Installing dependencies...", Colors.YELLOW)
+        print_colored("Installing dependencies...", Colors.BLUE)
         try:
             run_command(["poetry", "install"])
         except subprocess.CalledProcessError:
-            print_colored("Warning: Poetry install failed", Colors.RED)
+            print_colored("Warning: Poetry install failed", Colors.YELLOW)
 
     # Initialize Git
     if init_git:
-        print_colored("Initializing Git repository...", Colors.YELLOW)
+        print_colored("Initializing Git repository...", Colors.BLUE)
         run_command(["git", "init"])
         run_command(["git", "add", "."])
         run_command(["git", "commit", "-m", "Initial commit"])
 
         # Create GitHub repository
         if create_github:
-            print_colored("Creating GitHub repository...", Colors.YELLOW)
+            print_colored("Creating GitHub repository...", Colors.BLUE)
 
             if check_github_cli() and (github_username := get_github_username()):
                 full_repo_name = f"{github_username}/{project_name}"
@@ -345,21 +346,23 @@ def generate_project(
         print_colored("💡 Tip: Add --pypirc flag to create .pypirc for local publishing", Colors.BLUE)
 
     if create_github and not create_public:
-        print_colored("💡 Repository created as private. Use --public next time for public repositories", Colors.BLUE)
+        print_colored(
+            "💡 Tip: Repository created as private. Use --public next time for public repositories", Colors.BLUE
+        )
 
     if create_pypirc or create_secrets:
         print()
         print_colored("🚀 Your project is ready for publishing!", Colors.GREEN)
-        if create_pypirc:
-            print("  Local: make publish:test  # Test on TestPyPI")
-            print("         make publish       # Publish to PyPI")
-        if create_secrets:
-            print("  Automated: git tag v1.0.0 && git push --tags")
+        print_colored("  Manual:    make build", Colors.GREEN)
+        print_colored("             make publish-test  # Test on TestPyPI", Colors.GREEN)
+        print_colored("             make publish       # Publish to PyPI", Colors.GREEN)
+        print_colored("  Automated: make release-<level>", Colors.GREEN)
+        print_colored("             git tag v1.0.0 && git push --tags", Colors.GREEN)
 
 
 def print_args(**kwargs: Optional[Dict]) -> None:
     """Print the arguments for debugging."""
-    print_colored("Arguments received:", Colors.BLUE)
+    print_colored("Arguments received:", Colors.YELLOW)
     for key, value in kwargs.items():
         print_colored(f"  {key}: {value}", Colors.YELLOW)
 
@@ -586,7 +589,7 @@ def main() -> None:
     if args.command == "config":
         update_config_file(user_config_file_path, cookiecutter_config, user_config, args.__dict__)
         print_colored("Configuration updated successfully!", Colors.GREEN)
-        print_colored(f"Updated file: {user_config_file_path}", Colors.BLUE)
+        print_colored(f"Updated file: {user_config_file_path}", Colors.GREEN)
         sys.exit(0)
 
     # Handle generate command
