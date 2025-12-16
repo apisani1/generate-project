@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3rc6] - 2025-12-15
+
+ ### Changes
+- ♻️ refactor: simplify publishing instructions output
+
+
+
 ## [1.0.3rc5] - 2025-12-15
 
  ### Changes
