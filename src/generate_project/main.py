@@ -107,25 +107,30 @@ def check_github_cli() -> bool:
         return False
 
 
-def create_github_secrets(secrets: list[str], project_name: str) -> None:
-    """Create GitHub repository secrets from environment variables."""
+def create_github_secrets(env_var_to_secret_map: dict[str, str], project_name: str) -> None:
+    """Create GitHub repository secrets from environment variables.
+
+    Args:
+        env_var_to_secret_map: Dict mapping environment variable names to GitHub secret names
+        project_name: Full repository name (owner/repo)
+    """
     print_colored("Creating GitHub repository secrets...", Colors.BLUE)
 
     created_count = 0
     skipped_count = 0
 
-    for secret_name in secrets:
-        secret_value = os.environ.get(secret_name)
+    for env_var, secret_name in env_var_to_secret_map.items():
+        secret_value = os.environ.get(env_var)
 
         if not secret_value:
-            print_colored(f"  ⚠️  Skipping {secret_name} (not defined in environment)", Colors.YELLOW)
+            print_colored(f"  ⚠️  Skipping {secret_name} ({env_var} not in environment)", Colors.YELLOW)
             skipped_count += 1
             continue
 
         try:
             # Create the secret in GitHub repository
             run_command(["gh", "secret", "set", secret_name, "--repo", project_name], input=secret_value)
-            print_colored(f"  ✅ Created secret: {secret_name}", Colors.GREEN)
+            print_colored(f"  ✅ Created secret: {secret_name} (from {env_var})", Colors.GREEN)
             created_count += 1
         except subprocess.CalledProcessError:
             print_colored(f"  ❌ Failed to create secret: {secret_name}", Colors.RED)
@@ -339,9 +344,13 @@ def generate_project(
 
                 # Create secrets if requested
                 if create_secrets:
-                    create_github_secrets(
-                        ["POETRY_PYPI_TOKEN_PYPI", "POETRY_PYPI_TOKEN_TESTPYPI", "RTD_TOKEN"], full_repo_name
-                    )
+                    # Map new env var names (in .env) to old GitHub secret names (in workflows)
+                    env_to_secret_mapping = {
+                        "POETRY_PYPI_TOKEN_PYPI": "PYPI_TOKEN",
+                        "POETRY_PYPI_TOKEN_TESTPYPI": "TEST_PYPI_TOKEN",
+                        "RTD_TOKEN": "RTD_TOKEN",
+                    }
+                    create_github_secrets(env_to_secret_mapping, full_repo_name)
             else:
                 print_colored("GitHub repository creation failed due to CLI issues.", Colors.RED)
         elif create_secrets:

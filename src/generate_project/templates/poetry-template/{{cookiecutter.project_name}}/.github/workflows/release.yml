@@ -102,7 +102,7 @@ jobs:
       # Always test on TestPyPI first
       - name: Test PyPI release
         env:
-          POETRY_PYPI_TOKEN_TESTPYPI: ${{ "{{" }} secrets.POETRY_PYPI_TOKEN_TESTPYPI {{ "}}" }}
+          POETRY_PYPI_TOKEN_TESTPYPI: ${{ "{{" }} secrets.TEST_PYPI_TOKEN {{ "}}" }}
         run: ./run.sh publish:test
 
       - name: Test installation from TestPyPI
@@ -131,7 +131,7 @@ jobs:
       - name: Publish to PyPI
         if: steps.release-info.outputs.release_type == 'release'
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ "{{" }} secrets.POETRY_PYPI_TOKEN_PYPI {{ "}}" }}
+          POETRY_PYPI_TOKEN_PYPI: ${{ "{{" }} secrets.PYPI_TOKEN {{ "}}" }}
         run: ./run.sh publish
 
       # Update ReadTheDocs for all tagged versions
