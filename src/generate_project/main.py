@@ -352,12 +352,12 @@ def generate_project(
 
     if create_pypirc or create_secrets:
         print()
-        print_colored("🚀 Your project is ready for publishing!", Colors.GREEN)
-        print_colored("  Manual:    make build", Colors.GREEN)
-        print_colored("             make publish-test  # Test on TestPyPI", Colors.GREEN)
-        print_colored("             make publish       # Publish to PyPI", Colors.GREEN)
-        print_colored("  Automated: make release-<level>", Colors.GREEN)
-        print_colored("             git tag v1.0.0 && git push --tags", Colors.GREEN)
+        print("🚀 Your project is ready for publishing!")
+        print("  Manual:    make build")
+        print("             make publish-test  # Test on TestPyPI")
+        print("             make publish       # Publish to PyPI")
+        print("  Automated: make release-<level>")
+        print("             git tag v1.0.0 && git push --tags")
 
 
 def print_args(**kwargs: Optional[Dict]) -> None:
