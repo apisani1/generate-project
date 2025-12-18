@@ -434,16 +434,46 @@ function clean {
     find . -type f -name "*.pyc" -not -path "*env/*" -exec rm {} + 2>/dev/null || true
 }
 
-# export the contents of .env as environment variables
-function try-load-dotenv {
-    if [ ! -f "$THIS_DIR/.env" ]; then
-        echo "no .env file found"
-        return 1
+################################################################################
+# config_get
+#
+# Lookup a configuration value using the following precedence:
+#   1. .env file (project-local)
+#   2. Environment variable
+#
+# Returns:
+#   - value on stdout
+#   - non-zero exit code if not found
+################################################################################
+config_get() {
+    local key="$1"
+    local file="$THIS_DIR/.env"
+    local value
+
+    # 1. Check .env first (project-first policy)
+    if [[ -f "$file" ]]; then
+        value="$(
+            sed -n \
+                -e "s/^${key}=[\"']\{0,1\}\(.*\)[\"']\{0,1\}$/\1/p" \
+                "$file"
+        )"
+
+        # If key is defined in .env (even if empty), return it
+        if [[ -n "$value" || $(grep -q "^${key}=" "$file"; echo $?) -eq 0 ]]; then
+            printf '%s\n' "$value"
+            return 0
+        fi
     fi
 
-    while read -r line; do
-        export "$line"
-    done < <(grep -v '^#' "$THIS_DIR/.env" | grep -v '^$')
+    # 2. Fallback to environment
+    value="${!key:-}"
+    if [[ -n "$value" ]]; then
+        printf '%s\n' "$value"
+        return 0
+    fi
+
+    # 3. Not found
+    return 1
 }
 
 # Build package
@@ -453,19 +483,71 @@ function build {
     poetry build
 }
 
-# Publish to TestPyPI
-function publish:test {
+# Publish to TestPyPI, non strictly requiring token
+publish:test{
     echo "Publishing to TestPyPI..."
-    try-load-dotenv || true  # Load .env file if it exists
+
+    local token
+    token="$(config_get TESTPYPI_TOKEN)" || true
+
     poetry config repositories.testpypi https://test.pypi.org/legacy/
-    poetry publish -r testpypi
+
+    if [[ -n "$token" ]]; then
+        POETRY_PYPI_TOKEN_TESTPYPI="$token" poetry publish -r testpypi
+    else
+        poetry publish -r testpypi
+    fi
 }
 
-# Publish to PyPI
-function publish {
+# Publish to TestPyPI, strictly requiring token
+publish:test:strict {
+    echo "Publishing to TestPyPI (strict mode)..."
+
+    local token
+    token="$(config_get TESTPYPI_TOKEN)" || {
+        echo "Error: TESTPYPI_TOKEN not found in environment or .env"
+        return 1
+    }
+
+    [[ -n "$token" ]] || {
+        echo "Error: TESTPYPI_TOKEN is empty"
+        return 1
+    }
+
+    poetry config repositories.testpypi https://test.pypi.org/legacy/
+    POETRY_PYPI_TOKEN_TESTPYPI="$token" poetry publish -r testpypi
+}
+
+# Publish to PyPI, non strictly requiring token
+publish {
     echo "Publishing to PyPI..."
-    try-load-dotenv || true  # Load .env file if it exists
-    poetry publish
+
+    local token
+    token="$(config_get PYPI_TOKEN)" || true
+
+    if [[ -n "$token" ]]; then
+        POETRY_PYPI_TOKEN_PYPI="$token" poetry publish
+    else
+        poetry publish
+    fi
+}
+
+# Publish to PyPI, strictly requiring token
+publish:strict {
+    echo "Publishing to PyPI (strict mode)..."
+
+    local token
+    token="$(config_get PYPI_TOKEN)" || {
+        echo "Error: PYPI_TOKEN not found in environment or .env"
+        return 1
+    }
+
+    [[ -n "$token" ]] || {
+        echo "Error: PYPI_TOKEN is empty"
+        return 1
+    }
+
+    POETRY_PYPI_TOKEN_PYPI="$token" poetry publish
 }
 
 # Validate that package builds correctly
