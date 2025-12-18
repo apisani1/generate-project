@@ -10,7 +10,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import yaml
 from enum import Enum
 from pathlib import Path
 from typing import (
@@ -19,6 +18,7 @@ from typing import (
     Optional,
 )
 
+import yaml
 from dotenv import (
     find_dotenv,
     load_dotenv,

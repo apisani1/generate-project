@@ -484,7 +484,7 @@ function build {
 }
 
 # Publish to TestPyPI, non strictly requiring token
-publish:test{
+function publish:test {
     echo "Publishing to TestPyPI..."
 
     local token
@@ -500,7 +500,7 @@ publish:test{
 }
 
 # Publish to TestPyPI, strictly requiring token
-publish:test:strict {
+function publish:test:strict {
     echo "Publishing to TestPyPI (strict mode)..."
 
     local token
@@ -519,7 +519,7 @@ publish:test:strict {
 }
 
 # Publish to PyPI, non strictly requiring token
-publish {
+function publish {
     echo "Publishing to PyPI..."
 
     local token
@@ -533,7 +533,7 @@ publish {
 }
 
 # Publish to PyPI, strictly requiring token
-publish:strict {
+function publish:strict {
     echo "Publishing to PyPI (strict mode)..."
 
     local token
