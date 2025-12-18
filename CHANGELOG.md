@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3rc9] - 2025-12-18
+
+ ### Changes
+- fix: add template documentation and fix bash syntax errors
+- feat: implement tool-agnostic credential management
+
+
+
 ## [1.0.3rc7] - 2025-12-16
 
  ### Changes
