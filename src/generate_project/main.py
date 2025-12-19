@@ -253,11 +253,19 @@ def generate_project(
     if create_local_env or create_secrets:
         print()
         print("🚀 Your project is ready for publishing!")
-        print("  Manual:    make build")
-        print("             make publish-test  # Test on TestPyPI")
-        print("             make publish       # Publish to PyPI")
-        print("  CI:        make release-<level>")
-        print("             git tag v1.0.0 && git push --tags")
+        print("  Manual:")
+        print("      make build")
+        print("      make publish-test   # Test on TestPyPI")
+        print("      make publish        # Publish to PyPI")
+        print("  CI:")
+        print("      Commit your lastest changes and do:")
+        print("      make release-alpha  # For alpha releases")
+        print("      make release-beta   # For beta releases")
+        print("      make release-rc     # For release candidate releases")
+        print("      make release-micro  # For patch releases")
+        print("      make release-minor  # For minor releases")
+        print("      make release-major  # For major releases")
+        print("      git push && git push --tags")
 
 
 def expand_template(
