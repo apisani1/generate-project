@@ -149,7 +149,7 @@ def expand_template(
     # ✅ Case 1: Let Cookiecutter create the directory
     if create_project_dir:
         try:
-            run_command(cookiecutter_cmd, cwd=target_dir)
+            run_command(cookiecutter_cmd)
             return
         except subprocess.CalledProcessError:
             print_colored("Error: Failed to generate project", Colors.RED)
@@ -352,7 +352,7 @@ def generate_project(
         project_name = str(project_dir.name)
         create_project_dir = False
     else:
-        project_dir = Path(project_name)
+        project_dir = Path.cwd() / project_name
         if project_dir.exists():
             print_colored(f"Error: Directory '{project_name}' already exists.", Colors.RED)
             print_colored("Please choose a different project name or remove the existing directory:", Colors.RED)
