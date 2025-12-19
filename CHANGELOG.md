@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3rc11] - 2025-12-19
+
+ ### Changes
+- 📝 docs: add context-specific help epilogs for CLI commands
+- ♻️ refactor: consolidate credential file creation into generic function
+
+
+
 ## [1.0.3rc10] - 2025-12-19
 
  ### Changes
