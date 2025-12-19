@@ -35,7 +35,7 @@ index-servers =
 [pypi]
 repository = https://upload.pypi.org/legacy/
 username = __token__
-password = {pypitoken}
+password = {pypi_token}
 
 [testpypi]
 repository = https://test.pypi.org/legacy/
@@ -88,197 +88,6 @@ def run_command(
         raise
 
 
-def get_github_username() -> Optional[str]:
-    """Get the currently authenticated GitHub username."""
-    try:
-        result = run_command(["gh", "api", "user", "--jq", ".login"], check=False)
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except Exception:
-        pass
-    return None
-
-
-def check_github_repo_exists(repo_name: str, username: str) -> bool:
-    """
-    Check if a GitHub repository exists under the authenticated user's account.
-
-    Args:
-        repo_name: Name of the repository
-        username: GitHub username to check ownership
-
-    Returns:
-        True if the repository exists, False otherwise
-    """
-    try:
-        result = run_command(["gh", "repo", "view", f"{username}/{repo_name}"], check=False)
-        return result.returncode == 0
-    except Exception:
-        return False
-
-
-def check_github_cli() -> bool:
-    """Check if GitHub CLI is available and authenticated."""
-    try:
-        run_command(["gh", "repo", "list"])
-        return True
-    except FileNotFoundError:
-        print_colored("Error: GitHub CLI (gh) not installed.", Colors.RED)
-        print_colored("Install it from: https://cli.github.com/", Colors.RED)
-        return False
-    except subprocess.CalledProcessError as e:
-        stderr = e.stderr.lower().strip() if e.stderr else ""
-        stdout = e.stdout.lower().strip() if e.stdout else ""
-        combined_output = f"{stdout}\n{stderr}"
-        if "not logged into" in combined_output or "authentication" in combined_output:
-            print_colored("Error: GitHub CLI not authenticated.", Colors.RED)
-            print_colored("Run: gh auth login", Colors.RED)
-        elif "network" in combined_output or "connection" in combined_output:
-            print_colored("Error: Network connection issues.", Colors.RED)
-            print_colored("Check your internet connection and try again.", Colors.RED)
-        else:
-            print_colored("Error: GitHub CLI check failed.", Colors.RED)
-            print_colored("Run: gh auth status", Colors.RED)
-            if e.stderr:
-                print_colored(f"Details: {e.stderr.strip()}", Colors.RED)
-
-        return False
-
-
-def missing_enviroment_secrets() -> List[str]:
-    """Check if required environment variables for secrets are set."""
-    missing_vars = [var for var in TOKEN_NAMES if not os.environ.get(var)]
-    return missing_vars
-
-
-def expand_template(
-    template_path: Path,
-    target_dir: Path,
-    project_name: str,
-    *,
-    create_project_dir: bool = False,
-    kwargs: Optional[dict] = None,
-) -> None:
-
-    cookiecutter_cmd = [
-        "cookiecutter",
-        str(template_path),
-        f"project_name={project_name}",
-        "--no-input",
-    ]
-
-    for key, value in (kwargs or {}).items():
-        cookiecutter_cmd.append(f"{key}={value}")
-
-    # ✅ Case 1: Let Cookiecutter create the directory
-    if create_project_dir:
-        try:
-            run_command(cookiecutter_cmd)
-            return
-        except subprocess.CalledProcessError:
-            print_colored("Error: Failed to generate project", Colors.RED)
-            sys.exit(1)
-
-    # ✅ Case 2: Expand into existing directory
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-
-        cmd = cookiecutter_cmd + ["--output-dir", str(tmp_path)]
-
-        try:
-            run_command(cmd)
-        except subprocess.CalledProcessError:
-            print_colored("Error: Failed to generate project", Colors.RED)
-            sys.exit(1)
-
-        generated_dir = tmp_path / project_name
-        if not generated_dir.exists():
-            print_colored("Error: Generated project directory not found", Colors.RED)
-            sys.exit(1)
-
-        for item in generated_dir.iterdir():
-            dest = target_dir / item.name
-            if dest.exists():
-                print_colored(f"Error: Cannot move {item.name}, destination already exists", Colors.RED)
-                sys.exit(1)
-            shutil.move(str(item), str(dest))
-
-
-def create_github_secrets(
-    project_name: str,
-    secrets: List[str],
-) -> None:
-    """Create GitHub repository secrets from environment variables."""
-    print_colored("Creating GitHub repository secrets...", Colors.BLUE)
-
-    created_count = 0
-    skipped_count = 0
-
-    for secret_name in secrets:
-        secret_value = os.environ.get(secret_name)
-
-        if not secret_value:
-            print_colored(f"  ⚠️  Skipping {secret_name} (not defined in environment)", Colors.YELLOW)
-            skipped_count += 1
-            continue
-
-        try:
-            # Create the secret in GitHub repository
-            run_command(["gh", "secret", "set", secret_name, "--repo", project_name], input=secret_value)
-            print_colored(f"  ✅ Created secret: {secret_name}", Colors.GREEN)
-            created_count += 1
-        except subprocess.CalledProcessError:
-            print_colored(f"  ❌ Failed to create secret: {secret_name}", Colors.RED)
-            skipped_count += 1
-
-    print_colored(f"Secrets summary: {created_count} created, {skipped_count} skipped", Colors.BLUE)
-    if skipped_count == 0 and created_count > 0:
-        print_colored("All repository secrets created successfully!", Colors.GREEN)
-        print_colored(
-            f"You can view them at: https://github.com/{project_name}/settings/secrets/actions", Colors.GREEN
-        )
-
-
-def create_secrets_file(project_dir: Path, secrets_file: str, secrets: List[str], secrets_file_template: str) -> None:
-    """Create a secrets file from environment variables."""
-    print_colored(f"Creating {secrets_file} file in {project_dir} from environment variables...", Colors.BLUE)
-
-    secrets_file_path = project_dir / secrets_file
-    if secrets_file_path.exists():
-        print_colored(
-            f"  ⚠️  {secrets_file} already exists at {secrets_file_path}, refusing to overwrite", Colors.YELLOW
-        )
-        return
-
-    tokens = {}
-    token_found = {}
-    for secret_name in secrets:
-        secret_value = os.environ.get(secret_name)
-        token_key = secret_name.lower()
-        if secret_value:
-            tokens[token_key] = secret_value
-            token_found[token_key] = True
-            print_colored(f"  ✅ Added {secret_name} token to {secrets_file_path}", Colors.GREEN)
-        else:
-            tokens[token_key] = f"your-{token_key.replace('_', '-')}-here"
-            token_found[token_key] = False
-            print_colored(
-                f"  ⚠️  No {secret_name} found in environment, creating {secrets_file} with placeholder", Colors.YELLOW
-            )
-
-    # Write secrets file with restricted permissions
-    secrets_file_path.write_text(secrets_file_template.format(**tokens))
-    secrets_file_path.chmod(0o600)
-
-    if all(token_found.values()):
-        print_colored(f"{secrets_file} file created successfully at {secrets_file_path}!", Colors.GREEN)
-    else:
-        print_colored(
-            f"{secrets_file} template created at {secrets_file_path} - please update with your actual tokens",
-            Colors.YELLOW,
-        )
-
-
 def generate_project(
     project_name: str,
     template_path: Path,
@@ -305,7 +114,7 @@ def generate_project(
                 f"Warning: .env file not found at {env_file}, proceeding with existing environment variables",
                 Colors.YELLOW,
             )
-        missing_vars = missing_enviroment_secrets()
+        missing_vars = missing_enviroment_secrets(TOKEN_NAMES)
         if len(missing_vars) > 0:
             print_colored("Error: Cannot create GitHub secrets, .pypirc file or .env file", Colors.RED)
             print_colored(f"The following environment variables are missing: {', '.join(missing_vars)}", Colors.RED)
@@ -451,11 +260,196 @@ def generate_project(
         print("             git tag v1.0.0 && git push --tags")
 
 
-def print_args(**kwargs: Optional[Dict]) -> None:
-    """Print the arguments for debugging."""
-    print_colored("Arguments received:", Colors.YELLOW)
-    for key, value in kwargs.items():
-        print_colored(f"  {key}: {value}", Colors.YELLOW)
+def expand_template(
+    template_path: Path,
+    target_dir: Path,
+    project_name: str,
+    *,
+    create_project_dir: bool = False,
+    kwargs: Optional[dict] = None,
+) -> None:
+
+    cookiecutter_cmd = [
+        "cookiecutter",
+        str(template_path),
+        f"project_name={project_name}",
+        "--no-input",
+    ]
+
+    for key, value in (kwargs or {}).items():
+        cookiecutter_cmd.append(f"{key}={value}")
+
+    # ✅ Case 1: Let Cookiecutter create the directory
+    if create_project_dir:
+        try:
+            run_command(cookiecutter_cmd)
+            return
+        except subprocess.CalledProcessError:
+            print_colored("Error: Failed to generate project", Colors.RED)
+            sys.exit(1)
+
+    # ✅ Case 2: Expand into existing directory
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+
+        cmd = cookiecutter_cmd + ["--output-dir", str(tmp_path)]
+
+        try:
+            run_command(cmd)
+        except subprocess.CalledProcessError:
+            print_colored("Error: Failed to generate project", Colors.RED)
+            sys.exit(1)
+
+        generated_dir = tmp_path / project_name
+        if not generated_dir.exists():
+            print_colored("Error: Generated project directory not found", Colors.RED)
+            sys.exit(1)
+
+        for item in generated_dir.iterdir():
+            dest = target_dir / item.name
+            if dest.exists():
+                print_colored(f"Error: Cannot move {item.name}, destination already exists", Colors.RED)
+                sys.exit(1)
+            shutil.move(str(item), str(dest))
+
+
+def missing_enviroment_secrets(secrets: List[str]) -> List[str]:
+    """Check if required environment variables for secrets are set."""
+    missing_vars = [var for var in secrets if not os.environ.get(var)]
+    return missing_vars
+
+
+def create_secrets_file(project_dir: Path, secrets_file: str, secrets: List[str], secrets_file_template: str) -> None:
+    """Create a secrets file from environment variables."""
+    print_colored(f"Creating {secrets_file} file in {project_dir} from environment variables...", Colors.BLUE)
+
+    secrets_file_path = project_dir / secrets_file
+    if secrets_file_path.exists():
+        print_colored(
+            f"  ⚠️  {secrets_file} already exists at {secrets_file_path}, refusing to overwrite", Colors.YELLOW
+        )
+        return
+
+    tokens = {}
+    token_found = {}
+    for secret_name in secrets:
+        secret_value = os.environ.get(secret_name)
+        token_key = secret_name.lower()
+        if secret_value:
+            tokens[token_key] = secret_value
+            token_found[token_key] = True
+            if token_key in secrets_file_template:
+                print_colored(f"  ✅ Added {secret_name} token to {secrets_file_path}", Colors.GREEN)
+        else:
+            tokens[token_key] = f"your-{token_key.replace('_', '-')}-here"
+            token_found[token_key] = False
+            print_colored(
+                f"  ⚠️  No {secret_name} found in environment, creating {secrets_file} with placeholder", Colors.YELLOW
+            )
+
+    # Write secrets file with restricted permissions
+    secrets_file_path.write_text(secrets_file_template.format(**tokens))
+    secrets_file_path.chmod(0o600)
+
+    if all(token_found.values()):
+        print_colored(f"{secrets_file} file created successfully at {secrets_file_path}", Colors.GREEN)
+    else:
+        print_colored(
+            f"{secrets_file} template created at {secrets_file_path} - please update with your actual tokens",
+            Colors.YELLOW,
+        )
+
+
+def create_github_secrets(
+    project_name: str,
+    secrets: List[str],
+) -> None:
+    """Create GitHub repository secrets from environment variables."""
+    print_colored("Creating GitHub repository secrets...", Colors.BLUE)
+
+    created_count = 0
+    skipped_count = 0
+
+    for secret_name in secrets:
+        secret_value = os.environ.get(secret_name)
+
+        if not secret_value:
+            print_colored(f"  ⚠️  Skipping {secret_name} (not defined in environment)", Colors.YELLOW)
+            skipped_count += 1
+            continue
+
+        try:
+            # Create the secret in GitHub repository
+            run_command(["gh", "secret", "set", secret_name, "--repo", project_name], input=secret_value)
+            print_colored(f"  ✅ Created secret: {secret_name}", Colors.GREEN)
+            created_count += 1
+        except subprocess.CalledProcessError:
+            print_colored(f"  ❌ Failed to create secret: {secret_name}", Colors.RED)
+            skipped_count += 1
+
+    print_colored(f"Secrets summary: {created_count} created, {skipped_count} skipped", Colors.BLUE)
+    if skipped_count == 0 and created_count > 0:
+        print_colored("All repository secrets created successfully!", Colors.GREEN)
+        print_colored(
+            f"You can view them at: https://github.com/{project_name}/settings/secrets/actions", Colors.GREEN
+        )
+
+
+def check_github_cli() -> bool:
+    """Check if GitHub CLI is available and authenticated."""
+    try:
+        run_command(["gh", "repo", "list"])
+        return True
+    except FileNotFoundError:
+        print_colored("Error: GitHub CLI (gh) not installed.", Colors.RED)
+        print_colored("Install it from: https://cli.github.com/", Colors.RED)
+        return False
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.lower().strip() if e.stderr else ""
+        stdout = e.stdout.lower().strip() if e.stdout else ""
+        combined_output = f"{stdout}\n{stderr}"
+        if "not logged into" in combined_output or "authentication" in combined_output:
+            print_colored("Error: GitHub CLI not authenticated.", Colors.RED)
+            print_colored("Run: gh auth login", Colors.RED)
+        elif "network" in combined_output or "connection" in combined_output:
+            print_colored("Error: Network connection issues.", Colors.RED)
+            print_colored("Check your internet connection and try again.", Colors.RED)
+        else:
+            print_colored("Error: GitHub CLI check failed.", Colors.RED)
+            print_colored("Run: gh auth status", Colors.RED)
+            if e.stderr:
+                print_colored(f"Details: {e.stderr.strip()}", Colors.RED)
+
+        return False
+
+
+def get_github_username() -> Optional[str]:
+    """Get the currently authenticated GitHub username."""
+    try:
+        result = run_command(["gh", "api", "user", "--jq", ".login"], check=False)
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def check_github_repo_exists(repo_name: str, username: str) -> bool:
+    """
+    Check if a GitHub repository exists under the authenticated user's account.
+
+    Args:
+        repo_name: Name of the repository
+        username: GitHub username to check ownership
+
+    Returns:
+        True if the repository exists, False otherwise
+    """
+    try:
+        result = run_command(["gh", "repo", "view", f"{username}/{repo_name}"], check=False)
+        return result.returncode == 0
+    except Exception:
+        return False
 
 
 def read_json_file(config_path: Path) -> Dict:
@@ -562,7 +556,26 @@ def update_config_file(user_config_file_path: Path, cookiecutter_config: Dict, u
         sys.exit(1)
 
 
-EPILOG = """
+# Main epilog
+MAIN_EPILOG = """
+Available Commands:
+  generate    Create a new Python project with Poetry, testing, and CI/CD
+  config      Configure default values for project generation
+
+Quick Start:
+  %(prog)s generate my-project                     # Create a new project
+  %(prog)s config --author_name "Your Name"        # Set default author
+
+For detailed help on each command:
+  %(prog)s generate --help
+  %(prog)s config --help
+
+Documentation:
+  https://generate-project.readthedocs.io/
+"""
+
+# Generate command epilog
+GENERATE_EPILOG = """
 Publishing Setup:
   The script can set up both automated and manual publishing. Requires .env file with tokens.:
   TEST_PYPI_TOKEN=pypi-...      Token for TestPyPI publishing
@@ -573,11 +586,53 @@ Publishing Setup:
   - Creates GitHub repository secrets from .env tokens
 
 Examples:
-  %(prog)s my-project                              # Basic project
-  %(prog)s my-project --github                     # Create GitHub repo
-  %(prog)s my-project --public                     # Public GitHub repo
-  %(prog)s my-project --public --secrets           # Full setup
+  %(prog)s my-project                                                # Basic project
+  %(prog)s --local-env my-project                                    # Create local .env file with auth tokens
+  %(prog)s --github my-project                                       # Create GitHub repo
+  %(prog)s --public my-project                                       # Public GitHub repo
+  %(prog)s --public --secrets my-project                             # Public GitHub repo with secrets
+  %(prog)s --public --secrets --local-env my-project                 # Full setup
+
+The project directory will be created in the current working directory. If you want to generate the project in the current
+directory, use '.' as the project name:
+  %(prog)s .                                                         # Create project in current directory
+
+You can create the project directory first and have a project specific .env file in it to avoid using a global .env file
 """
+
+# Config command epilog
+CONFIG_EPILOG = """
+Configuration File:
+  Settings are saved to the installed package's templates/config.yaml file
+  Location varies by installation (e.g., venv/lib/python*/site-packages/generate_project/templates/config.yaml)
+  All values are used as defaults for the 'generate' command
+
+Examples:
+  %(prog)s --author_name "John Doe"                # Set default author
+  %(prog)s --author_email "john@example.com"       # Set default email
+  %(prog)s --github_username "johndoe"             # Set GitHub username
+  %(prog)s --python_version "^3.11"                # Set Python version
+
+  # Set multiple values at once
+  %(prog)s --author_name "Jane Smith" --author_email "jane@example.com"
+
+  # To find the config file location do:
+
+<bash>
+python -c \"""
+import generate_project.main
+from pathlib import Path
+print()
+print(Path(generate_project.main.__file__).parent / 'templates' / 'config.yaml')
+\"""
+"""
+
+
+def print_args(**kwargs: Optional[Dict]) -> None:
+    """Print the arguments for debugging."""
+    print_colored("Arguments received:", Colors.YELLOW)
+    for key, value in kwargs.items():
+        print_colored(f"  {key}: {value}", Colors.YELLOW)
 
 
 def main() -> None:
@@ -592,6 +647,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Create and configure Python projects managed with Poetry.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=MAIN_EPILOG,
     )
 
     # Create subparsers
@@ -607,7 +663,7 @@ def main() -> None:
         help="Generate a new Python project",
         description="Create a new Python project managed with Poetry.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=EPILOG,
+        epilog=GENERATE_EPILOG,
     )
 
     # Add project name as positional argument to generate command
@@ -659,6 +715,8 @@ def main() -> None:
         "config",
         help="Configure default project parameters",
         description="Set default values for project configuration parameters",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=CONFIG_EPILOG,
     )
 
     # Add only project configuration arguments to config parser
@@ -688,8 +746,8 @@ def main() -> None:
         if args.template_path is None:
             args.template_path = Path(__file__).parent / "templates" / "poetry-template"
 
-        # --public implies --github
-        if args.create_public:
+        # --public or --secrets implies --github
+        if args.create_public or args.create_secrets:
             args.create_github = True
 
         # Generate the project
