@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3rc10] - 2025-12-19
+
+ ### Changes
+- 🐛 fix: resolve FileNotFoundError in project generation
+
+
+
 ## [1.0.3rc9] - 2025-12-18
 
  ### Changes
