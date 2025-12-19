@@ -25,6 +25,31 @@ from dotenv import (
 )
 
 
+TOKEN_NAMES = ["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"]
+
+PYPIRC_FILE_TEMPLATE = """[distutils]
+index-servers =
+    pypi
+    testpypi
+
+[pypi]
+repository = https://upload.pypi.org/legacy/
+username = __token__
+password = {pypitoken}
+
+[testpypi]
+repository = https://test.pypi.org/legacy/
+username = __token__
+password = {test_pypi_token}
+"""
+
+ENV_FILE_TEMPLATE = """# Publishing tokens
+TEST_PYPI_TOKEN={test_pypi_token}
+PYPI_TOKEN={pypi_token}
+RTD_TOKEN={rtd_token}
+"""
+
+
 class Colors(Enum):
     """ANSI color codes for terminal output."""
 
@@ -122,8 +147,7 @@ def check_github_cli() -> bool:
 
 def missing_enviroment_secrets() -> List[str]:
     """Check if required environment variables for secrets are set."""
-    required_vars = ["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"]
-    missing_vars = [var for var in required_vars if not os.environ.get(var)]
+    missing_vars = [var for var in TOKEN_NAMES if not os.environ.get(var)]
     return missing_vars
 
 
@@ -180,7 +204,10 @@ def expand_template(
             shutil.move(str(item), str(dest))
 
 
-def create_github_secrets(secrets: List[str], project_name: str) -> None:
+def create_github_secrets(
+    project_name: str,
+    secrets: List[str],
+) -> None:
     """Create GitHub repository secrets from environment variables."""
     print_colored("Creating GitHub repository secrets...", Colors.BLUE)
 
@@ -212,106 +239,44 @@ def create_github_secrets(secrets: List[str], project_name: str) -> None:
         )
 
 
-PYPIRC_FILE_TEMPLATE = """
-[distutils]
-index-servers =
-    pypi
-    testpypi
+def create_secrets_file(project_dir: Path, secrets_file: str, secrets: List[str], secrets_file_template: str) -> None:
+    """Create a secrets file from environment variables."""
+    print_colored(f"Creating {secrets_file} file in {project_dir} from environment variables...", Colors.BLUE)
 
-[pypi]
-repository = https://upload.pypi.org/legacy/
-username = __token__
-password = {pypi_token}
-
-[testpypi]
-repository = https://test.pypi.org/legacy/
-username = __token__
-password = {test_token}
-"""
-
-
-def create_pypirc_file(project_dir: Path) -> None:
-    """Create .pypirc file from environment variables."""
-    print_colored(f"Creating .pypirc file in {project_dir} from environment variables...", Colors.BLUE)
-
-    pypirc_path = project_dir / ".pypirc"
-    if pypirc_path.exists():
-        print_colored(f"  ⚠️  .pypirc file already exists at {pypirc_path}, refusing to overwrite", Colors.YELLOW)
+    secrets_file_path = project_dir / secrets_file
+    if secrets_file_path.exists():
+        print_colored(
+            f"  ⚠️  {secrets_file} already exists at {secrets_file_path}, refusing to overwrite", Colors.YELLOW
+        )
         return
 
-    pypi_token = os.environ.get("PYPI_TOKEN")
-    if not pypi_token:
-        print_colored("  ⚠️  No PyPI token found in environment, creating .pypirc with placeholder", Colors.YELLOW)
+    tokens = {}
+    token_found = {}
+    for secret_name in secrets:
+        secret_value = os.environ.get(secret_name)
+        token_key = secret_name.lower()
+        if secret_value:
+            tokens[token_key] = secret_value
+            token_found[token_key] = True
+            print_colored(f"  ✅ Added {secret_name} token to {secrets_file_path}", Colors.GREEN)
+        else:
+            tokens[token_key] = f"your-{token_key.replace('_', '-')}-here"
+            token_found[token_key] = False
+            print_colored(
+                f"  ⚠️  No {secret_name} found in environment, creating {secrets_file} with placeholder", Colors.YELLOW
+            )
 
-    test_token = os.environ.get("TEST_PYPI_TOKEN")
-    if not test_token:
-        print_colored("  ⚠️  No TestPyPI token found in environment, creating .pypirc with placeholder", Colors.YELLOW)
+    # Write secrets file with restricted permissions
+    secrets_file_path.write_text(secrets_file_template.format(**tokens))
+    secrets_file_path.chmod(0o600)
 
-    # Create .pypirc content
-    pypirc_content = PYPIRC_FILE_TEMPLATE.format(
-        pypi_token=pypi_token or "your-pypi-token-here", test_token=test_token or "your-test-pypi-token-here"
-    )
-
-    # Write file with restricted permissions
-    pypirc_path.write_text(pypirc_content)
-    pypirc_path.chmod(0o600)
-
-    if pypi_token:
-        print_colored(f"  ✅ Added PyPI token to {pypirc_path}", Colors.GREEN)
-
-    if test_token:
-        print_colored(f"  ✅ Added TestPyPI token to {pypirc_path}", Colors.GREEN)
-
-    if pypi_token and test_token:
-        print_colored(f".pypirc file created successfully at {pypirc_path}!", Colors.GREEN)
+    if all(token_found.values()):
+        print_colored(f"{secrets_file} file created successfully at {secrets_file_path}!", Colors.GREEN)
     else:
         print_colored(
-            f".pypirc template created at {pypirc_path} - please update with your actual tokens", Colors.YELLOW
+            f"{secrets_file} template created at {secrets_file_path} - please update with your actual tokens",
+            Colors.YELLOW,
         )
-
-
-ENV_FILE_TEMPLATE = """
-# Publishing tokens
-TEST_PYPI_TOKEN={test_token}
-PYPI_TOKEN={pypi_token}
-"""
-
-
-def create_local_env_file(project_dir: Path) -> None:
-    """Create .env file from environment variables."""
-    print_colored(f"Creating .env file in {project_dir} from environment variables...", Colors.BLUE)
-
-    env_path = project_dir / ".env"
-    if env_path.exists():
-        print_colored(f"  ⚠️  .env file already exists at {env_path}, refusing to overwrite", Colors.YELLOW)
-        return
-
-    pypi_token = os.environ.get("PYPI_TOKEN")
-    if not pypi_token:
-        print_colored("  ⚠️  No PyPI token found in environment, creating .env with placeholder", Colors.YELLOW)
-
-    test_token = os.environ.get("TEST_PYPI_TOKEN")
-    if not test_token:
-        print_colored("  ⚠️  No TestPyPI token found in environment, creating .env with placeholder", Colors.YELLOW)
-
-    # Create .env content
-    env_content = ENV_FILE_TEMPLATE.format(
-        pypi_token=pypi_token or "your-pypi-token-here", test_token=test_token or "your-test-pypi-token-here"
-    )
-
-    # Write file with restricted permissions
-    env_path.write_text(env_content)
-    env_path.chmod(0o600)
-
-    if pypi_token:
-        print_colored(f"  ✅ Added PyPI token to {env_path}", Colors.GREEN)
-    if test_token:
-        print_colored(f"  ✅ Added TestPyPI token to {env_path}", Colors.GREEN)
-
-    if pypi_token and test_token:
-        print_colored(f".env file created successfully at {env_path}!", Colors.GREEN)
-    else:
-        print_colored(f".env template created at {env_path} - please update with your actual tokens", Colors.YELLOW)
 
 
 def generate_project(
@@ -375,12 +340,12 @@ def generate_project(
     # Change to project directory
     os.chdir(project_dir)
 
-    # Create .pypirc file if requested
+    # Create secrets files if requested
     if create_pypirc:
-        create_pypirc_file(project_dir)
+        create_secrets_file(project_dir, ".pypirc", TOKEN_NAMES, PYPIRC_FILE_TEMPLATE)
 
     if create_local_env:
-        create_local_env_file(project_dir)
+        create_secrets_file(project_dir, ".env", TOKEN_NAMES, ENV_FILE_TEMPLATE)
 
     # Install dependencies
     if install_deps:
@@ -451,7 +416,7 @@ def generate_project(
 
                 # Create secrets if requested
                 if create_secrets:
-                    create_github_secrets(["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"], full_repo_name)
+                    create_github_secrets(full_repo_name, TOKEN_NAMES)
             else:
                 print_colored("GitHub repository creation failed due to CLI issues.", Colors.RED)
         elif create_secrets:
