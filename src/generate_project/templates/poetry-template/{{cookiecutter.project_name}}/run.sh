@@ -488,7 +488,7 @@ function publish:test {
     echo "Publishing to TestPyPI..."
 
     local token
-    token="$(config_get TESTPYPI_TOKEN)" || true
+    token="$(config_get TEST_PYPI_TOKEN)" || true
 
     poetry config repositories.testpypi https://test.pypi.org/legacy/
 
@@ -504,13 +504,13 @@ function publish:test:strict {
     echo "Publishing to TestPyPI (strict mode)..."
 
     local token
-    token="$(config_get TESTPYPI_TOKEN)" || {
-        echo "Error: TESTPYPI_TOKEN not found in environment or .env"
+    token="$(config_get TEST_PYPI_TOKEN)" || {
+        echo "Error: TEST_PYPI_TOKEN not found in environment or .env"
         return 1
     }
 
     [[ -n "$token" ]] || {
-        echo "Error: TESTPYPI_TOKEN is empty"
+        echo "Error: TEST_PYPI_TOKEN is empty"
         return 1
     }
 
