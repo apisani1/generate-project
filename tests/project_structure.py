@@ -13,6 +13,12 @@ github_workflow_files = [
     ".github/workflows/update_rtd.yml",
 ]
 
+vscode_files = [
+    ".vscode/settings.json",
+    ".vscode/launch.json",
+    ".vscode/tasks.json",
+]
+
 expected_files = (
     [
         "pyproject.toml",
@@ -23,6 +29,7 @@ expected_files = (
         ".readthedocs.yaml",
         "tests/__init__.py",
     ]
+    + vscode_files
     + docs_files
     + github_workflow_files
 )
