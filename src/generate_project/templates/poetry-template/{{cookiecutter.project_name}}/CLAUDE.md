@@ -43,7 +43,7 @@ make test-verbose         # Run tests with verbose output
 make docs-api             # Generate API documentation automatically
 make docs                 # Build Sphinx documentation
 make docs-live            # Start live documentation server with auto-reload
-make docs-clean.          # Clean and rebuild documentation
+make docs-clean           # Clean and rebuild documentation
 ```
 
 ### Package Building

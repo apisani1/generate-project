@@ -1,12 +1,12 @@
 # Reference
 
-This is the comprehensive reference guide for generate-project, covering all commands, options, and configuration parameters.
+This is a reference guide for generate-project, a Python project generator 
 
 ## Commands Overview
 
 generate-project provides two main commands:
 
-- **generate**: Create a new Python project from templates
+- **generate**: Create a new Python project from cookiecutter templates
 - **config**: Configure default project parameters
 
 ## generate Command

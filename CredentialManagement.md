@@ -64,7 +64,7 @@ Example contents (values shown here are placeholders):
 
 ```
 PYPI_TOKEN=pypi-xxxxxxxxxxxxxxxx
-TESTPYPI_TOKEN=pypi-yyyyyyyyyyyyyyyy
+TEST_PYPI_TOKEN=pypi-yyyyyyyyyyyyyyyy
 ```
 
 Important properties:

@@ -41,10 +41,10 @@ You can provide the project configuration values in the terminal command line:
 
 ```bash
 generate-project generate "project-name" \
-author_name="Your Name" \
-email="your.email@example.com" \
-github_username="yourusername" \
-python_version="3.11"
+--author_name="Your Name" \
+--email="your.email@example.com" \
+--github_username="yourusername" \
+--python_version="3.11"
 ...
 ```
 
@@ -55,7 +55,7 @@ These are the most important project configuration options:
 | Option | Description |   
 |--------|-------------|   
 | `project_name` | Name of the project |   
-| `package_name` | Python package name (importable) |   
+| `package_name` | Python package name |   
 | `author_name` | Author's name |   
 | `email` | Author's email |   
 | `github_username` | GitHub username |   
@@ -65,16 +65,16 @@ These are the most important project configuration options:
 
 ### Advanced Usage
 
-You can also save your configuration values to be used as default values:
+You can also save your own configuration values to be used as default values:
 ```bash
 generate-project config \
-author_name="Your Name" \
-email="your.email@example.com" \
-github_username="yourusername" \
-python_version="3.11"
+--author_name="Your Name" \
+--email="your.email@example.com" \
+--github_username="yourusername" \
+--python_version="3.11"
 ```
 
-and the you can omit the saved configuration options:
+and then you can omit the saved configuration options:
 
 ```bash
 generate-project generate "project-name" 
@@ -86,27 +86,27 @@ The generated project will have the following structure:
 
 ```
 project-name/
-├── .github/workflows/         # GitHub Actions CI/CD
+├── .github/workflows/         # GitHub Actions for CI/CD
 │   ├── docs.yml               # Documentation building and testing
 │   ├── tests.yml              # Code quality and testing
-│   ├── release.yml            # Automated releases
-│   └── update_rtd.yml         # ReadTheDocs updates
-├── docs/                      # Sphinx documentation
-│   ├── api/                   # Auto-generated API docs
+│   ├── release.yml            # Automated release generation
+│   └── update_rtd.yml         # Manual ReadTheDocs updates
+├── docs/                      # Sphinx based documentation
+│   ├── api/                   # Auto-generated API documentation
 │   ├── guides/                # User guides
 │   ├── conf.py                # Sphinx configuration
 │   └── index.md               # Documentation home
 ├── src/package_name/          # Source code
 │   └── __init__.py            # Package initialization
-├── tests/                     # Test suite
-├── scripts/                   # Development scripts
+├── tests/                     # Test directory 
+├── scripts/                   # Release management scripts
 ├── .gitignore                 # Git ignore rules
 ├── .readthedocs.yaml          # ReadTheDocs configuration
-├── LICENSE                    # MIT License
+├── LICENSE                    # MIT License file
 ├── Makefile                   # Development commands
 ├── pyproject.toml             # Project configuration
 ├── run.sh                     # Development task runner
-└── README.md                  # Project documentation
+└── README.md                  # Project repository documentation
 ```
 
   
@@ -118,7 +118,7 @@ The following options are available to setup a github repository for the project
 |--------|-------------|   
 | `--github` | Create a private github repository for the project |   
 | `--public` | Create a public github repository for the project|    
-| `--secrets` | Create repository secrets for the release management workflow |     
+| `--secrets` | Create repository secrets for the release management workflows |     
 
 The following repository secrets can be automatically setup: 
 
@@ -126,7 +126,7 @@ The following repository secrets can be automatically setup:
 `PYPI_TOKEN`   
 `RTD_TOKEN`   
 
-The tokens must be available in a .env file found in the folder where generate-project is executed or increasingly higher folders.
+The tokens must be available in a .env file located in the directory where generate-project is executed or in any parent directory up the folder hierarchy.
 
 ## Development Workflow
 
@@ -134,22 +134,27 @@ The generated project includes a Makefile with common development tasks:
 
 ```bash
 
-# Install dependencies
-make install              # Install main dependencies
+# Environment Setup
+make venv                 # Create and activate a local virtual environment
+make install              # Install core dependencies
 make install-dev          # Install all development dependencies
 
 # Code quality
 make format               # Run code formatters
 make lint                 # Run linters
+make check                # Run format + lint + tests on all files
+make pre-commit           # Run format and lint only on changed files, then tests
 
 # Testing
 make test                 # Run tests
 make test-cov             # Run tests with coverage
+make coverage             # Generate coverage report
 
 # Documentation
+make docs-api             # Generate API documentation
 make docs                 # Build documentation
 make docs-live            # Start live preview server
-make docs-api             # Generate API docs
+
 
 # Releasing
 make build                # Build package locally
@@ -157,14 +162,4 @@ make publish              # Publish to PyPI a package generate locally
 make release-minor        # Create a new release and bump the version
 ```
 
-Run `make help` for a complete list of the make targets available.
-
-## Customization
-You can customize this template by:
-
-1. Forking the repository   
-2. Modifying files in the template structure base on cookiecutter 
-3. Updating cookiecutter.json with your preferred defaults 
-
-## License
-This project template is released under the MIT License. See the LICENSE file for details.
+Run `make help` for a complete list of the development tasks available.
