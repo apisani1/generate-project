@@ -1,5 +1,7 @@
 """Generate README.md from documentation files."""
 
+from typing import Optional
+
 DOCS_PATH = "./docs/source/"
 ELEMENTS = [
     ("badges", "", ""),
@@ -7,16 +9,16 @@ ELEMENTS = [
 ]
 
 
-def extract_content(file_path: str, start_marker: str = "", end_marker: str = "") -> str:
+def extract_content(file_path: str, start_marker: Optional[str] = None, end_marker: Optional[str]  = None) -> str:
     """Extract content between markers from a file."""
     with open(file_path, "r") as f:
         content = f.read()
 
     if start_marker or end_marker:
-        start = content.find(start_marker)
-        end = content.find(end_marker)
+        start = content.find(str(start_marker))
+        end = content.find(str(end_marker))
         if start != -1 and end != -1:
-            return content[start + len(start_marker) : end].strip()
+            return content[start + len(str(start_marker)) : end].strip()
     return content
 
 
