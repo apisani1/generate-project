@@ -1,5 +1,10 @@
 .PHONY: all format lint test tests help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc rollback
 
+######################
+# This automation tasks were inspired by automation patterns from
+# phitoduck/python-course-cookiecutter-v2, but are an independent implementation.
+######################
+
 # Default target executed when no arguments are given to make.
 all: help
 

@@ -1,17 +1,24 @@
-# Reference
+# Command Reference
 
-This is a reference guide for generate-project, a Python project generator 
+This is the reference guide for generate-project, a command-line tool for generating Python project folders with pre-configured development tasks for formatting, linting, documentation, testing, release management and CI/CD.
 
 ## Commands Overview
 
-generate-project provides two main commands:
+generate-project provides two commands:
 
-- **generate**: Create a new Python project from cookiecutter templates
+- **generate**: Create a new Python project folder with configurable parameters
 - **config**: Configure default project parameters
+
+For quick help use:
+```bash
+generate-project --help
+generate-project generate --help
+generate-project config --help
+```
 
 ## generate Command
 
-Create a new Python project from cookiecutter templates with comprehensive development setup.
+Create a new Python project folder with comprehensive development setup.
 
 ### Synopsis
 
@@ -25,7 +32,9 @@ generate-project generate PROJECT_NAME [OPTIONS]
 
 | Argument | Description |
 |----------|-------------|
-| `PROJECT_NAME` | Name of the project to create (positional argument) |
+| `PROJECT-NAME` | Name of the project to create |
+
+generate-project will create a new subdirectory named  `PROJECT-NAME` in your current working directory and populate it with the project template. If you want to generate the project in an existing directory without creating a subdirectory, use `.` as the project name.
 
 #### Project Configuration Options
 
@@ -59,17 +68,34 @@ These options configure the project metadata and can be saved as defaults using 
 | `--public` | Create a public GitHub repository | Private repository |
 | `--secrets` | Create GitHub repository secrets for PyPl and RTD integration | No secrets creation |
 
-#### Publishing Setup Options
+GitHub repository secrets are used by GitHub CI/CD actions and automated publishing tasks:
+```bash
+    make release-major        # Create major release
+    make release-minor        # Create minor release
+    make release-micro        # Create micro (patch) release
+    make release-rc           # Create release candidate
+    make release-beta         # Create beta pre-release
+    make release-alpha        # Create alpha pre-release
+```
+
+
+#### Manual Publishing Setup Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--pypirc` | Create .pypirc file with PyPl tokens for local publishing | No .pypirc creation |
+| `--local-env` | Create local `.env` file with tokens in project directory | No .env creation |
+
+This local `.env` file will be used for manual publishing tasks:
+```bash
+    make publish-test         # Publish to TestPyPI
+    make publish              # Publish to PyPI
+```
 
 #### File Path Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--env` | Path to .env file containing tokens for repository secrets | `.env` (location auto-detected) |
+| `--env` | Path to .env file containing tokens for repository secrets | `.env` with location auto-detect|
 | `--template` | Path to custom cookiecutter template | Built-in poetry template |
 
 ### Examples
@@ -77,7 +103,7 @@ These options configure the project metadata and can be saved as defaults using 
 #### Basic Project Creation
 
 ```bash
-generate-project generate my-awesome-project
+generate-project generate my-project
 ```
 
 #### Custom Project with Metadata
@@ -86,7 +112,6 @@ generate-project generate my-awesome-project
 generate-project generate my-project \
     --author_name="John Doe" \
     --email="john@example.com" \
-    --github_username="johndoe" \
     --description="An awesome Python library"
 ```
 
@@ -99,7 +124,6 @@ generate-project generate my-project \
     --github_username="johndoe" \
     --public \
     --secrets \
-    --pypirc
 ```
 
 #### Using Custom Template
@@ -110,9 +134,21 @@ generate-project generate my-project \
     --author_name="John Doe"
 ```
 
+#### Generate Project in Current Directory
+
+```bash
+# Navigate to your project directory first
+cd my-project
+
+# Generate project files in current directory
+generate-project generate .
+```
+
+This approach is useful when you want to use a customized `.env` file for the project. In this case, manually create the project directory and then, inside the directory, create the  `.env` file and run `generate-project generate .`.
+
 ### Publishing Setup
 
-The `--secrets` and `--pypirc` options enable automated and manual publishing workflows. They require an `.env` file with the following tokens:
+The `--secrets` and `--local-env` options enable automated and manual publishing workflows. They require an `.env` file with the following tokens:
 
 ```bash
 # .env file
@@ -121,13 +157,23 @@ PYPI_TOKEN=pypi-...           # Token for PyPI publishing
 RTD_TOKEN=rtd_...             # Token for ReadTheDocs publishing
 ```
 
-The .env file should be located in the folder where generate-project is executed or increasingly higher folders.
+#### Token Location
 
-#### GitHub Secrets (--secrets)
-Creates repository secrets from .env tokens, enabling automated publishing to PyPl and RTD through GitHub Actions.
+The `.env` file should be located in one of the following locations (searched in order):
 
-#### Local .pypirc (--pypirc)
-Creates a `.pypirc` file for manual publishing using `make publish:test` and `make publish`.
+1. Path specified by `--env` option
+2. Current working directory
+3. Parent directories (searched upward)
+4. If no .env file is found, the application falls back to reading the tokens from environment variables.
+
+#### Publishing Options Explained
+
+**GitHub Secrets (`--secrets`)**:   
+Creates GitHub epository secrets from `.env` tokens, enabling automated publishing to PyPI and RTD through CI/CD workflows. Requires GitHub CLI authentication.
+
+**Local .env (`--local-env`)**:   
+Creates a project-specific `.env` file in the project directory to be used by manual publishing tasks. This is useful to freeze the publishing credentials of the project.
+
 
 ## config Command
 
@@ -157,7 +203,7 @@ The `config` command accepts the same project configuration options as the `gene
 
 ### Configuration File
 
-The configuration is stored in `src/generate_project/templates/config.yaml` and follows this format:
+The configuration is stored in `/templates/config.yaml` within the folder where the application is installed and follows this format:
 
 ```yaml
 default_context:
@@ -177,35 +223,18 @@ generate-project config \
     --author_name="John Doe" \
     --email="john@example.com" \
     --github_username="johndoe" \
-    --version="0.0.0"
 ```
 
-#### Update Specific Defaults
+#### Update Project Defaults
 
 ```bash
 generate-project config \
     --description="My project" \
     --python_version="ˆ3.10"
+    --version="0.0.0"
 ```
 
-After setting defaults, you can omit these parameters in future `generate` commands:
-
-```bash
-# Uses configured defaults for author_name, email, etc.
-generate-project generate new-project
-```
-
-## Requirements
-
-- Python 3.10+
-- Cookiecutter 2.6.0+
-- PyYAML 6.0.0+
-- python-dotenv 1.1.0+
-
-### Optional Requirements
-
-- **GitHub CLI (gh)**: Required for `--github`, `--public` and `--secrets` options
-- **VS Code**: Used by the release script for editing release commit messages and changelogs
+After setting defaults, you can omit these parameters in future `generate` commands.
 
 ## Generated Project Structure
 
@@ -213,11 +242,15 @@ The `generate` command creates a complete Python project with the following stru
 
 ```
 project-name/
-├── .github/workflows/         # GitHub Actions CI/CD
-│   ├── docs.yml               # Documentation building
+├── .github/workflows/         # GitHub actions for CI/CD
+│   ├── docs.yml               # Documentation building and testing
 │   ├── tests.yml              # Code quality and testing
-│   ├── release.yml            # Automated releases
-│   └── update_rtd.yml         # ReadTheDocs updates
+│   ├── release.yml            # Automated releases and publishing
+│   └── update_rtd.yml         # Manual ReadTheDocs updates
+├── .vscode/                   # VS Code configuration
+│   ├── settings.json          # Editor settings, linting, formatting
+│   ├── launch.json            # Debug configurations
+│   └── tasks.json             # Task definitions
 ├── docs/                      # Sphinx documentation
 │   ├── api/                   # Auto-generated API docs
 │   ├── guides/                # User guides
@@ -225,10 +258,13 @@ project-name/
 │   └── index.md               # Documentation home
 ├── src/package_name/          # Source code
 │   └── __init__.py            # Package initialization
-├── tests/                     # Test suite
-├── scripts/                   # Development scripts
+├── tests/                     # Test directory
+├── scripts/                   # Release management scripts
+├── .env                       # Environment variables (if --local-env used)
 ├── .gitignore                 # Git ignore rules
 ├── .readthedocs.yaml          # ReadTheDocs configuration
+├── CLAUDE.md                  # Claude Code integration guide
+├── CredentialManagement.md    # Token management documentation
 ├── LICENSE                    # MIT License
 ├── Makefile                   # Development commands
 ├── pyproject.toml             # Project configuration
@@ -236,9 +272,91 @@ project-name/
 └── README.md                  # Project documentation
 ```
 
-## Error Handling
+## Integration with Development Workflow
+
+The generated projects include comprehensive development tooling:
+
+### Code Quality Tools
+- **Black**: Code formatting
+- **isort**: Import sorting
+- **flake8**: Linting and style checking
+- **mypy**: Static type checking
+- **pylint**: Advanced linting and code analysis
+
+### Testing Framework
+- **pytest**: Test runner with plugin support
+- **pytest-cov**: Coverage reporting
+
+### Documentation System
+- **Sphinx**: Documentation generation
+- **MyST-Parser**: Markdown support in Sphinx
+- **autodoc**: Automatic API documentation from docstrings
+- **ReadTheDocs**: Automated documentation hosting
+
+### CI/CD Workflows
+- **Tests**: Run on pull requests and pushes
+- **Docs**: Build and validate documentation
+- **Release**: Automated PyPI publishing on new version (using git tags)
+- **RTD Update**: Manual documentation updates
+
+# Development Workflow
+
+The generated project includes a Makefile with common development tasks:
+
+```bash
+
+# Environment Setup
+make venv                 # Create and activate a local virtual environment
+make install              # Install core dependencies
+make install-dev          # Install all development dependencies
+
+# Code quality
+make format               # Run code formatters
+make lint                 # Run linters
+make check                # Run format + lint + tests on all files
+make pre-commit           # Run format and lint only on changed files, then tests
+
+# Testing
+make test                 # Run tests
+make test-cov             # Run tests with coverage
+make coverage             # Generate coverage report
+
+# Documentation
+make docs-api             # Generate API documentation
+make docs                 # Build documentation
+make docs-live            # Start live preview server
+
+
+# Release tasks will bump the version, create a new release and publish it
+make release-major        # Create major release
+make release-minor        # Create minor release
+make release-micro        # Create micro (patch) release
+make release-rc           # Create release candidate
+make release-beta         # Create beta pre-release
+make release-alpha        # Create alpha pre-release
+```
+
+Run `make help` for a complete list of the development tasks available.
+
+# Error Handling
 
 ### Common Issues
+
+#### Missing Authentication Secrets
+```
+Error: Cannot create GitHub secrets or .env file.
+The following environment variables are missing:
+```
+
+**Solution**: Make sure that the authentication tokens (`TEST_PYPI_TOKEN`, `PYPI_TOKEN` and `RTD_TOKEN`) are available on a `.env` file or as environment variables.
+
+#### GitHub CLI Not Installed
+```
+Error: GitHub CLI (gh) not installed.
+Install it from: https://cli.github.com/
+```
+
+**Solution**: Install the GitHub CLI from [https://cli.github.com/](https://cli.github.com/)
 
 #### GitHub CLI Not Authenticated
 ```
@@ -246,32 +364,18 @@ Error: GitHub CLI not authenticated.
 Run: gh auth login
 ```
 
-#### Missing .env File
+**Solution**: Authenticate with GitHub CLI using `gh auth login` and follow the prompts.
+
+#### Project Directory Already Exists
 ```
-Error: Cannot create secrets/pypirc without environment file
-Expected location: ./.env
+Error: Directory <project-name> already exists.
 ```
 
-#### Invalid Project Name
-Project names should follow Python package naming conventions and avoid reserved keywords.
+**Solution**: Either use a different project name, remove the existing directory, or use `.` to generate the project inside an existing directory.
 
-### Exit Codes
+#### Project File Already Exists
+```
+Error: Cannot move <file name>, destination already exists.
+```
 
-| Code | Description |
-|------|-------------|
-| 0 | Success |
-| 1 | General error (invalid arguments, missing dependencies, etc.) |
-
-## Integration with Development Workflow
-
-The generated projects include comprehensive development tooling:
-
-- **Code Quality**: Black, isort, flake8, mypy, pylint
-- **Testing**: pytest with coverage reporting
-- **Documentation**: Sphinx with auto-generated API docs
-- **CI/CD**: GitHub Actions workflows
-- **Publishing**: Automated PyPI releases
-- **Documentation**: Automated RTD publishing
-- **Development**: Make targets and shell scripts for common tasks
-
-Use `make help` in any generated project to see available development commands.
+**Solution**: When using `.` as the project name, make sure that the current directory does not contain any files or subdirectories that collide with the project template structure.

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+######################
+# This script was inspired by automation patterns from
+# phitoduck/python-course-cookiecutter-v2, but is an independent implementation.
+######################
+
 set -e
 
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"

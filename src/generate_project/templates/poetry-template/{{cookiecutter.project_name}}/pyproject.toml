@@ -6,7 +6,9 @@ build-backend = "poetry.core.masonry.api"
 name = "{{ cookiecutter.project_name }}"
 version = "{{ cookiecutter.version }}"
 description = "{{ cookiecutter.description }}"
-authors = [{ name = "{{ cookiecutter.author_name }}", email = "{{ cookiecutter.email }}" }]
+authors = [
+    { name = "{{ cookiecutter.author_name }}", email = "{{ cookiecutter.email }}" },
+]
 readme = "README.md"
 requires-python = ">={{ cookiecutter.python_version.replace('^', '') }}"
 dependencies = []
@@ -42,16 +44,17 @@ python = "{{ cookiecutter.python_version }}"
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-ipykernel = "^6.29.5"
-python-dotenv = "^1.1.0"
+
 
 [tool.poetry.group.test]
 optional = true
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.0"
-pytest-asyncio = "^0.21.0"
 pytest-cov = "^6.1.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.poetry.group.lint]
 optional = true
@@ -80,7 +83,7 @@ sphinx-copybutton = "^0.5.2"
 sphinx-autobuild = "^2021.3.14"
 sphinx-sitemap = "^2.6.0"
 sphinx-tabs = "^3.4.7"
-roman = "^4.2"  # Required for Sphinx latex builder with Python 3.13+
+roman = "^4.2"                  # Required for Sphinx latex builder with Python 3.13+
 doc8 = ">=0.8.0"
 
 [tool.black]
@@ -155,6 +158,12 @@ disable = [
     "import-outside-toplevel",
     "global-statement",
     "global-variable-not-assigned",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-locals",
+    "too-many-statements",
+    "too-many-branches",
 ]
 
 [tool.pylint.FORMAT]
