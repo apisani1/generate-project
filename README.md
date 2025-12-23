@@ -4,7 +4,7 @@
 [![Documentation Status](https://readthedocs.org/projects/generate-project/badge/?version=latest)](https://generate-project.readthedocs.io/en/latest/?badge=latest)
 
 # Generate Project 
-A Python project folder generator based on Poetry for dependency and package management. The generated folder provides everything you need to get started with a well-structured Python project, including development taks for formatting, linting, documentation, testing, and CI/CD.
+A Python project folder generator based on Poetry for dependency and package management. The generated folder provides everything you need to get started with a well-structured Python project, including development tasks for formatting, linting, documentation, testing, and CI/CD.
 
 ## Features
 
