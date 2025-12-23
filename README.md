@@ -19,7 +19,7 @@ A Python project folder generator based on Poetry for dependency and package man
 📋 Project structure following best practices   
   
 
-## Requirements
+## Requirements 
 
 Python 3.10+   
 Cookiecutter 2.6.0+  
