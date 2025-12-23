@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.0] - 2025-12-23
+
+### New Features:
+✨ Support for `.` as project name: Generate project files directly in the current directory without creating a subdirectory   
+✨ Local environment file option: New `--local-env` flag to create a project-specific `.env` file with authentication tokens for manual publishing workflows
+
+### CI/CD Enhancements:
+🚀 Added pull_request trigger to test workflows for automatic PR testing   
+🔧 Added VS Code configuration to root project for improved developer experience
+
+### Documentation Improvements:
+📝 Added CLAUDE.md integration guide to project template for Claude Code users   
+📝 Enhanced reference documentation with comprehensive `v1.1.0` features and examples   
+📝 Improved publishing setup documentation and command examples   
+📝 Improved command `--help` with context-specific help epilogs   
+
+
 ## [1.0.3rc11] - 2025-12-19
 
  ### Changes
