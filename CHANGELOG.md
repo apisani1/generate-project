@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1rc2] - 2026-02-05
+
+ ### Changes
+- 🐛 fix: correct GitHub Actions script context in docs workflow
+
+
+
 ## [1.1.1rc1] - 2026-02-05
 
  ### Changes
