@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.1] - 2026-02-05
+
+ ### Changes
+- 📝 docs: add documentation for --version option
+
+
 ## [1.1.1rc2] - 2026-02-05
 
  ### Changes
