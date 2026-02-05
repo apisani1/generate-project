@@ -14,7 +14,7 @@ from datetime import datetime
 project = "generate-project"
 copyright = f"{datetime.now().year}, Antonio Pisani"
 author = "Antonio Pisani"
-release = "1.1.0"
+release = "1.1.1rc1"
 
 os.environ["SPHINX_BUILD"] = "True"
 

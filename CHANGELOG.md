@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1rc1] - 2026-02-05
+
+ ### Changes
+- ✨ feat: add --version option to CLI
+- 🐛 fix: search for .env file from current working directory
+
+
 ## [1.1.0] - 2025-12-23
 
 ### New Features:
