@@ -23,6 +23,7 @@ from dotenv import (
     find_dotenv,
     load_dotenv,
 )
+from generate_project import __version__  # noqa: F401
 
 
 TOKEN_NAMES = ["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"]
@@ -657,6 +658,7 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=MAIN_EPILOG,
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     # Create subparsers
     subparsers = parser.add_subparsers(
