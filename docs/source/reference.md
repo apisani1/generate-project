@@ -12,9 +12,17 @@ generate-project provides two commands:
 For quick help use:
 ```bash
 generate-project --help
+generate-project --version
 generate-project generate --help
 generate-project config --help
 ```
+
+## Global Options
+
+| Option | Description |
+|--------|-------------|
+| `--help` | Show help message and exit |
+| `--version` | Show program version and exit |
 
 ## generate Command
 
