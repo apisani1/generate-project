@@ -9,11 +9,7 @@ description = "A Python project generator using cookiecutter templates"
 authors = [{ name = "Antonio Pisani", email = "antonio.pisani@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "cookiecutter>=2.6.0",
-    "python-dotenv>=1.1.0",
-    "pyyaml>=6.0.0",
-]
+dependencies = ["cookiecutter>=2.6.0", "python-dotenv>=1.1.0", "pyyaml>=6.0.0"]
 keywords = ["python", "project-generator", "cookiecutter", "template"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -108,7 +104,7 @@ sphinx-copybutton = "^0.5.2"
 sphinx-autobuild = "^2021.3.14"
 sphinx-sitemap = "^2.6.0"
 sphinx-tabs = "^3.4.7"
-roman = "^4.2"  # Required for Sphinx latex builder with Python 3.13+
+roman = "^4.2"
 doc8 = ">=0.8.0"
 
 [tool.black]
@@ -140,8 +136,8 @@ extend-ignore = [
     "E203",
 ]
 exclude = [
-    # "docs",
-    # "tests",
+    "docs",
+    "tests",
     ".venv",
     ".git",
     "__pycache__",
@@ -150,18 +146,20 @@ exclude = [
     "{{cookiecutter.project_name}}",
 ]
 radon-max-cc = 15
-max-line-length = 119
 
 [tool.mypy]
+exclude = [
+    '^tests/test.*\.py$',
+    '^docs/.*\.py$',
+    '{{cookiecutter.project_name}}',
+]
 python_version = "3.10"
-
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 ignore_missing_imports = true
 show_error_codes = true
-warn_unused_ignores = true
-exclude = ["{{cookiecutter.project_name}}"]
+warn_unused_ignores = false
 
 [tool.pylint.MESSAGES_CONTROL]
 disable = [
@@ -195,16 +193,17 @@ disable = [
     "too-many-locals",
     "too-many-statements",
     "too-many-branches",
-
+    "too-many-return-statements",
+    "too-many-instance-attributes",
+    "unnecessary-dunder-call",
+    "duplicate-code",
+    "line-too-long",
 ]
-
-[tool.pylint.FORMAT]
-max-line-length = 119
 
 [tool.pylint.MASTER]
 ignore = [
-    # "tests",
-    # "docs",
+    "tests",
+    "docs",
     ".venv",
     ".git",
     "__pycache__",
@@ -255,8 +254,8 @@ line_length = 119
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 default_section = "FIRSTPARTY"
 extend_skip = [
-    # "tests",
-    # "docs",
+    "tests",
+    "docs",
     ".venv",
     ".git",
     "__pycache__",

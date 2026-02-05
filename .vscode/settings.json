@@ -171,12 +171,8 @@
     "black-formatter.args": [
         "--line-length=119"
     ],
-    "flake8.ignorePatterns": [
-        "${workspaceFolder}/docs/*.py",
-        "${workspaceFolder}/tests/test*.py",
-        "${workspaceFolder}/scripts/*.py",
-
-    ],
+    "flake8.importStrategy": "fromEnvironment",
+    "flake8.path": ["poetry", "run", "flake8"],
     "isort.check": true,
     "isort.importStrategy": "fromEnvironment",
     "ruff.organizeImports": false,

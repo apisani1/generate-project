@@ -65,6 +65,15 @@ requirements:
 lint:
 	@./run.sh lint
 
+mypy:
+	@./run.sh lint:mypy
+
+flake8:
+	@./run.sh lint:flake8
+
+pylint:
+	@./run.sh lint:pylint
+
 # Run all linters on changed files
 lint-diff:
 	@./run.sh lint:diff

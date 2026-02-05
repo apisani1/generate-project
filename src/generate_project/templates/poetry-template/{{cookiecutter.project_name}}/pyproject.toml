@@ -109,28 +109,18 @@ extend-ignore = [
     # E203: Whitespace before ':'
     "E203",
 ]
-exclude = [
-    # "docs",
-    # "tests",
-    ".venv",
-    ".git",
-    "__pycache__",
-    "build",
-    "dist",
-]
+exclude = ["docs", "tests", ".venv", ".git", "__pycache__", "build", "dist"]
 radon-max-cc = 15
-max-line-length = 119
 
 [tool.mypy]
-# exclude = '^(tests\/test.*\.py|docs\/.*\.py)$'
+exclude = '^(tests\/test.*\.py|docs\/.*\.py)$'
 python_version = "{{ cookiecutter.python_version.lstrip('^~>=<!').split(',')[0].split()[0] }}"
-
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 ignore_missing_imports = true
 show_error_codes = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 
 [tool.pylint.MESSAGES_CONTROL]
 disable = [
@@ -164,21 +154,15 @@ disable = [
     "too-many-locals",
     "too-many-statements",
     "too-many-branches",
+    "too-many-return-statements",
+    "too-many-instance-attributes",
+    "unnecessary-dunder-call",
+    "duplicate-code",
+    "line-too-long",
 ]
-
-[tool.pylint.FORMAT]
-max-line-length = 119
 
 [tool.pylint.MASTER]
-ignore = [
-    # "tests",
-    # "docs",
-    ".venv",
-    ".git",
-    "__pycache__",
-    "build",
-    "dist",
-]
+ignore = ["tests", "docs", ".venv", ".git", "__pycache__", "build", "dist"]
 
 [tool.isort]
 profile = "black"
@@ -221,15 +205,7 @@ ensure_newline_before_comments = true
 line_length = 119
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 default_section = "FIRSTPARTY"
-extend_skip = [
-    # "tests",
-    # "docs",
-    ".venv",
-    ".git",
-    "__pycache__",
-    "build",
-    "dist",
-]
+extend_skip = ["tests", "docs", ".venv", ".git", "__pycache__", "build", "dist"]
 
 [tool.doc8]
 max-line-length = 120
