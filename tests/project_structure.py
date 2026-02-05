@@ -43,3 +43,25 @@ custom_context = {
     "description": "A test project created for testing purposes",
     "python_version": "3.11",
 }
+
+library_context = {
+    "project_name": "test-library",
+    "author_name": "Test User",
+    "email": "test@example.com",
+    "github_username": "testuser",
+    "version": "0.1.0",
+    "description": "A test library project",
+    "python_version": "3.11",
+    "project_type": "library",
+}
+
+application_context = {
+    "project_name": "test-application",
+    "author_name": "Test User",
+    "email": "test@example.com",
+    "github_username": "testuser",
+    "version": "0.1.0",
+    "description": "A test application project",
+    "python_version": "3.11",
+    "project_type": "application",
+}

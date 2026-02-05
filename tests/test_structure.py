@@ -5,10 +5,12 @@ import re
 
 from pytest_cookies.plugin import Result
 from tests.project_structure import (
+    application_context,
     custom_context,
     docs_files,
     expected_files,
     github_workflow_files,
+    library_context,
 )
 
 
@@ -159,3 +161,17 @@ def test_custom_project_parameters(custom_project: Result) -> None:
     assert os.path.isdir(
         path_in_output(custom_project, f"src/{package_name}")
     ), f"Custom package directory not found: src/{package_name}"
+
+
+def test_application_has_main_py(application_project: Result) -> None:
+    """Test that application projects have main.py."""
+    package_name = application_context["project_name"].replace("-", "_").lower()
+    main_py_path = path_in_output(application_project, f"src/{package_name}/main.py")
+    assert os.path.exists(main_py_path), "Application should have main.py"
+
+
+def test_library_has_no_main_py(library_project: Result) -> None:
+    """Test that library projects do not have main.py."""
+    package_name = library_context["project_name"].replace("-", "_").lower()
+    main_py_path = path_in_output(library_project, f"src/{package_name}/main.py")
+    assert not os.path.exists(main_py_path), "Library should not have main.py"

@@ -6,7 +6,7 @@ import subprocess
 import pytest
 
 from pytest_cookies.plugin import Result
-from tests.project_structure import custom_context
+from tests.project_structure import application_context, custom_context
 
 
 def test_project_generation(default_project: Result) -> None:
@@ -54,3 +54,21 @@ def test_python_syntax(default_project: Result) -> None:
                     subprocess.check_output(["python", "-m", "py_compile", file_path], stderr=subprocess.STDOUT)
                 except subprocess.CalledProcessError as e:
                     pytest.fail(f"Python syntax error in {file_path}: {e.output}")
+
+
+def test_application_has_scripts_section(application_project: Result) -> None:
+    """Test that application projects have [project.scripts] section."""
+    pyproject_path = os.path.join(application_project.project_path, "pyproject.toml")
+    with open(pyproject_path) as f:
+        content = f.read()
+    assert "[project.scripts]" in content, "Application should have [project.scripts]"
+    package_name = application_context["project_name"].replace("-", "_").lower()
+    assert f'{package_name} = "{package_name}.main:main"' in content
+
+
+def test_library_has_no_scripts_section(library_project: Result) -> None:
+    """Test that library projects do not have [project.scripts] section."""
+    pyproject_path = os.path.join(library_project.project_path, "pyproject.toml")
+    with open(pyproject_path) as f:
+        content = f.read()
+    assert "[project.scripts]" not in content, "Library should not have [project.scripts]"

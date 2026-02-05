@@ -11,7 +11,7 @@ from typing import (
 import pytest
 
 from pytest_cookies.plugin import Result
-from tests.project_structure import custom_context
+from tests.project_structure import application_context, custom_context, library_context
 
 
 # import sys
@@ -69,4 +69,18 @@ def custom_project(cookies: Result) -> Generator[Result, None, None]:
     """Create a customized project using the template."""
 
     with bake_in_temp_dir(cookies, extra_context=custom_context) as result:
+        yield result
+
+
+@pytest.fixture
+def library_project(cookies: Result) -> Generator[Result, None, None]:
+    """Create a library project using the template."""
+    with bake_in_temp_dir(cookies, extra_context=library_context) as result:
+        yield result
+
+
+@pytest.fixture
+def application_project(cookies: Result) -> Generator[Result, None, None]:
+    """Create an application project using the template."""
+    with bake_in_temp_dir(cookies, extra_context=application_context) as result:
         yield result
