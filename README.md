@@ -121,14 +121,31 @@ project-name/
 ```
 
   
+## Project Types
+
+By default, generate-project creates an **application** project with a CLI entry point. Use the `--library` flag to create a library project instead:
+
+```bash
+# Create an application (default)
+generate-project generate my-app
+
+# Create a library
+generate-project generate my-lib --library
+```
+
+| Project Type | CLI Entry Point | main.py | Use Case |
+|--------------|-----------------|---------|----------|
+| Application | Yes | Yes | CLI tools, scripts |
+| Library | No | No | Reusable packages, APIs |
+
 ## GitHub Repository Setup
 
 The following options are available to setup a github repository for the project:
 
-| Option | Description |   
-|--------|-------------|   
-| `--github` | Create a private github repository for the project |   
-| `--public` | Create a public github repository for the project|    
+| Option | Description |
+|--------|-------------|
+| `--github` | Create a private github repository for the project |
+| `--public` | Create a public github repository for the project|
 | `--secrets` | Create repository secrets for the release management workflows |     
 
 The following repository secrets can be automatically setup: 

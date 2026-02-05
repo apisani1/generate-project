@@ -12,10 +12,10 @@ authors = [
 readme = "README.md"
 requires-python = ">={{ cookiecutter.python_version.replace('^', '') }}"
 dependencies = []
-
+{% if cookiecutter.project_type == "application" %}
 [project.scripts]
 {{ cookiecutter.package_name }} = "{{ cookiecutter.package_name }}.main:main"
-
+{% endif %}
 [project.urls]
 "Source Code" = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}"
 "Release Notes" = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}/releases"

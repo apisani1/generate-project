@@ -3,9 +3,11 @@
 {{ cookiecutter.description }}
 
 ## Overview
-
+{% if cookiecutter.project_type == "application" %}
+This documentation covers the {{ cookiecutter.project_name }} application.
+{% else %}
 This documentation covers the {{ cookiecutter.project_name }} library.
-
+{% endif %}
 ## Installation
 
 ```bash
@@ -17,9 +19,30 @@ Or, if you use Poetry:
 ```bash
 poetry add {{ cookiecutter.project_name }}
 ```
+{% if cookiecutter.project_type == "application" %}
+## Usage
 
+Run the application:
+
+```bash
+{{ cookiecutter.package_name }}
+```
+
+Or run as a module:
+
+```bash
+python -m {{ cookiecutter.package_name }}
+```
+{% endif %}
 ## Quick Start
+{% if cookiecutter.project_type == "application" %}
+```python
+from {{ cookiecutter.package_name }}.main import main
 
+# Run the application
+main()
+```
+{% else %}
 ```python
 from {{ cookiecutter.package_name }} import Example
 
@@ -30,3 +53,4 @@ example = Example()
 result = example.run()
 print(result)
 ```
+{% endif %}

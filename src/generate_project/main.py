@@ -720,6 +720,14 @@ def main() -> None:
     generate_parser.add_argument("--env", dest="env_file", type=Path, help="Use specific .env file (default: ./.env)")
     generate_parser.add_argument("--template", dest="template_path", type=Path, help="Use a specific template path")
 
+    # Add project type flag to generate parser
+    generate_parser.add_argument(
+        "--library",
+        dest="is_library",
+        action="store_true",
+        help="Create a library project instead of an application (no CLI entry point)",
+    )
+
     # Create the config subparser
     config_parser = subparsers.add_parser(
         "config",
@@ -759,6 +767,9 @@ def main() -> None:
         # --public or --secrets implies --github
         if args.create_public or args.create_secrets:
             args.create_github = True
+
+        # Convert --library flag to project_type for cookiecutter
+        args.project_type = "library" if args.is_library else "application"
 
         # Generate the project
         # print_args(**args.__dict__)

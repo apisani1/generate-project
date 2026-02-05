@@ -68,6 +68,17 @@ These options configure the project metadata and can be saved as defaults using 
 | `--no-install` | Skip installing dependencies with Poetry | Install dependencies |
 | `--no-git` | Skip Git repository initialization | Initialize Git repository |
 
+#### Project Type Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--library` | Create a library project (no CLI entry point) | Application project |
+
+When `--library` is specified:
+- No `[project.scripts]` section is added to `pyproject.toml`
+- No `main.py` CLI entry point is created
+- README focuses on API usage instead of CLI usage
+
 #### GitHub Integration Options (requires gh CLI)
 
 | Option | Description | Default |
