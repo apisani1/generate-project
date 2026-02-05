@@ -750,7 +750,7 @@ def main() -> None:
     elif args.command == "generate":
         # Set defaults that depend on script location
         if args.env_file is None:
-            args.env_file = find_dotenv()
+            args.env_file = find_dotenv(usecwd=True)
         if args.template_path is None:
             args.template_path = Path(__file__).parent / "templates" / "poetry-template"
 
