@@ -39,9 +39,11 @@ def test_application_docs_content(application_project: Result) -> None:
         content = f.read()
     assert "application" in content, "Docs should reference application"
     assert "{{ cookiecutter" not in content, "No unrendered templates"
-    # Application-specific content
-    package_name = application_context["project_name"].replace("-", "_").lower()
-    assert f"from {package_name}.main import main" in content, "Should have main import"
+    # Application-specific content - CLI quick start
+    project_name = application_context["project_name"]
+    package_name = project_name.replace("-", "_").lower()
+    assert f"pip install {project_name}" in content, "Should have pip install command"
+    assert package_name in content, "Should have CLI command"
 
 
 def test_library_docs_content(library_project: Result) -> None:

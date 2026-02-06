@@ -36,11 +36,10 @@ python -m {{ cookiecutter.package_name }}
 {% endif %}
 ## Quick Start
 {% if cookiecutter.project_type == "application" %}
-```python
-from {{ cookiecutter.package_name }}.main import main
+```bash
+pip install {{ cookiecutter.project_name }}
 
-# Run the application
-main()
+{{ cookiecutter.package_name }}
 ```
 {% else %}
 ```python
