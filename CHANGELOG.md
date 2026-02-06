@@ -1,5 +1,53 @@
 # Changelog
 
+## [1.2.0] - 2026-02-06
+
+# Release v1.2.0 - Library vs Application Support
+
+## Overview
+
+This release introduces the ability to generate either **library** or **application** projects, giving users more flexibility in project structure and configuration.
+
+## New Features
+
+### `--library` Flag
+
+Generate library projects with the new `--library` flag:
+
+```bash
+# Create an application project (default)
+generate-project generate my-app
+
+# Create a library project
+generate-project generate my-lib --library
+```
+
+### Project Type Differences
+
+| Aspect | Application | Library |
+|--------|-------------|---------|
+| Entry Point | CLI script in `pyproject.toml` | No entry point |
+| Main Module | `main.py` with CLI | Core library modules only |
+| Documentation | CLI usage examples | Python import examples |
+| Quick Start | `pip install` + CLI command | Python import code |
+
+## Changes
+
+### Features
+- Add `--library` flag for library vs application projects
+
+### Documentation
+- Adapt documentation templates for app vs library projects
+- Update app Quick Start to show CLI usage instead of Python import
+
+### Tests
+- Add comprehensive tests for library vs application project types
+
+## Upgrade Notes
+
+This is a backward-compatible release. Existing behavior is preserved - projects generated without the `--library` flag will continue to be application projects with CLI entry points.
+
+
 ## [1.2.0b2] - 2026-02-06
 
  ### Changes
