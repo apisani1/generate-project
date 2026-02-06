@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0b1] - 2026-02-06
+
+ ### Changes
+- 📝 docs: adapt documentation templates for app vs library projects
+- ✅ test: add tests for library vs application project types
+- ✨ feat: add --library flag for library vs application projects
+
+
+
 ## [1.1.1] - 2026-02-05
 
  ### Changes
