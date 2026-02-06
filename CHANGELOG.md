@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0b2] - 2026-02-06
+
+ ### Changes
+- 📝 docs: update app Quick Start to show CLI usage instead of Python import
+
+
+
 ## [1.2.0b1] - 2026-02-06
 
  ### Changes
