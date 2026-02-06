@@ -7,143 +7,14 @@ This document describes the planned releases to reach v2.0.0 of generate-project
 The main goal of v2.0.0 is to:
 - Offer the option to use UV or Poetry as package and dependency manager
 - Migrate the generate-project itself to UV
-- Support both library and application project types
 
 ## Current Status
 
-- **Current Version**: v1.0.2.post1
+- **Current Version**: v1.2.0
 - **Package Manager**: Poetry
-- **Template Type**: Poetry-based application template
+- **Template Type**: Poetry-based application and library template
 
 ## Release Sequence
-
-### v1.1.0 - Modernize Project and Template
-
-**Goal**: Update both the generate-project repository and the cookiecutter Poetry template to use the latest scripts, workflows, and tooling.
-
-**Changes to Project Files**
-
-Using the following repo as a reference:
-
-https://github.com/apisani1/mcp-multi-server
-
-Update the following files in the generate-project repository:
-
-- `.github/workflows/delete_workflows_runs.yml` (new file)
-- `.github/workflows/docs.yml`
-- `.github/workflows/release.yml`
-- `.github/workflows/tests.yml`
-- `.github/workflows/update_rtd.yml`
-- `.gitignore`
-- `.pypirc`
-- `.readthedocs.yaml`
-- `.vscode/launch.json`
-- `.vscode/settings.json`
-- `.vscode/tasks.json`
-- `Makefile` (adapt for application vs library differences)
-- `pyproject.toml` (adapt for application vs library differences)
-- `run.sh` (adapt for application vs library differences)
-- `scripts/release.py`
-- `scripts/reset_version.py`
-- `scripts/update_versions.py`
-
-**Changes to Template Files**:
-
-Apply the same updates to the cookiecutter template files:
-
-`src/generate_project/templates/poetry-template/{{cookiecutter.project_name}}/`
-- `.github/workflows/delete_workflows_runs.yml` (new)
-- `.github/workflows/docs.yml`
-- `.github/workflows/release.yml`
-- `.github/workflows/tests.yml`
-- `.github/workflows/update_rtd.yml`
-- `.gitignore`
-- `.pypirc`
-- `.readthedocs.yaml`
-- `.vscode/launch.json`
-- `.vscode/settings.json`
-- `.vscode/tasks.json`
-- `Makefile`
-- `pyproject.toml`
-- `run.sh`
-- `scripts/release.py`
-- `scripts/reset_version.py`
-- `scripts/update_versions.py`
-
-**Important Considerations**:
-- Be mindful of Jinja2 syntax in cookiecutter templates
-- Pay special attention to escaping in GitHub workflow files
-- Adapt application-specific configurations when needed
-- Note differences between library (mcp-multi-server) and application(generate-project) patterns
-
-**Testing Requirements**:
-- Update test suite to verify new workflow files
-- Test template generation with new files
-- Verify GitHub Actions workflows validate correctly
-- Test release script functionality
-
-**Documentation Updates**:
-- Update README.md with any new features
-- Update CLAUDE.md with new development commands
-- Document any breaking changes
-- CHANGELOG.md will be automatically update by scripts/release.py
-
----
-
-### v1.2.0 - Add Library vs Application Support
-
-**Goal**: Enable generate-project to create either library or application projects with appropriate configurations.
-
-**New Features**:
-
-Add `--library` flag to `generate-project generate` command:
-
-```bash
-# Create an application project (default)
-generate-project generate my-app
-
-# Create a library project
-generate-project generate my-lib --library
-```
-
-**Configuration Differences**:
-
-| Aspect | Application | Library |
-|--------|-------------|---------|
-| Entry Point | CLI/script in pyproject.toml | No entry point |
-| Main Module | `main.py` with CLI | Core library modules only |
-| Dependencies | May include CLI tools (click, typer) | Minimal dependencies |
-| Scripts | Application-specific scripts | Library build scripts |
-| Documentation Focus | User guides, CLI reference | API documentation |
-| Testing Approach | Integration + unit tests | Primarily unit tests |
-| Packaging | May include data files, assets | Code + type stubs |
-
-**Implementation Details**:
-- Add `project_type` parameter to cookiecutter.json (default: "application")
-- Create conditional blocks in templates using Jinja2
-- Adjust pyproject.toml structure based on type
-- Customize README and documentation structure
-- Adapt test structure and examples
-
-**Template Changes**:
-- Conditional `[tool.poetry.scripts]` section
-- Different example code in `src/{{cookiecutter.package_name}}/`
-- Adjusted documentation templates
-- Different testing patterns
-
-**Testing Requirements**:
-- Test both application and library project generation
-- Verify correct file structure for each type
-- Test that generated projects pass their own test suites
-- Validate pyproject.toml structure for both types
-
-**Documentation Updates**:
-- Document `--library` flag in README
-- Add examples of library vs application projects
-- Update CLAUDE.md with new template structure
-- Add migration guide for existing users
-
----
 
 ### v1.3.0 - Add UV Template Support
 
@@ -298,7 +169,6 @@ When implementing each release with Claude Code:
 
 ## Reference Materials
 
-- **mcp-multi-server repository**: Source for latest patterns (library-focused)
 - **Current generate-project**: Baseline for application patterns
 - **Poetry documentation**: For maintaining Poetry template
 - **UV documentation**: For implementing UV template
