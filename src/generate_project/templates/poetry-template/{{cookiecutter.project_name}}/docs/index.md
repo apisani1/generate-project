@@ -4,7 +4,11 @@
 
 ## Overview
 
+{% if cookiecutter.project_type == "application" -%}
+This documentation covers the {{ cookiecutter.project_name }} application.
+{%- else -%}
 This documentation covers the {{ cookiecutter.project_name }} library.
+{%- endif %}
 
 ## Installation
 
@@ -18,8 +22,32 @@ Or, if you use Poetry:
 poetry add {{ cookiecutter.package_name }}
 ```
 
+{% if cookiecutter.project_type == "application" %}
+## Usage
+
+Run the application:
+
+```bash
+{{ cookiecutter.package_name }}
+```
+
+Or run as a module:
+
+```bash
+python -m {{ cookiecutter.package_name }}
+```
+
+{% endif %}
 ## Quick Start
 
+{% if cookiecutter.project_type == "application" -%}
+```python
+from {{ cookiecutter.package_name }}.main import main
+
+# Run the application
+main()
+```
+{%- else -%}
 ```python
 from {{ cookiecutter.package_name }} import Example
 
@@ -30,6 +58,7 @@ example = Example()
 result = example.run()
 print(result)
 ```
+{%- endif %}
 
 ```{toctree}
 :hidden:
@@ -49,3 +78,4 @@ API Reference <api/index>
 GitHub Repository <https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}>
 PyPI Package <https://pypi.org/project/{{ cookiecutter.package_name }}/>
 Issue Tracker <https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}/issues>
+```

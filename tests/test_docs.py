@@ -7,6 +7,7 @@ import pytest
 
 from pytest_cookies.plugin import Result
 from tests.conftest import inside_dir
+from tests.project_structure import application_context, library_context
 
 
 def test_docs_generation(default_project: Result) -> None:
@@ -29,3 +30,27 @@ def test_docs_generation(default_project: Result) -> None:
             assert os.path.exists("docs/_build/html/index.html")
         except subprocess.CalledProcessError as e:
             pytest.fail(f"Documentation generation failed: {e.stderr}")
+
+
+def test_application_docs_content(application_project: Result) -> None:
+    """Test that application docs have correct content."""
+    index_path = os.path.join(application_project.project_path, "docs/index.md")
+    with open(index_path) as f:
+        content = f.read()
+    assert "application" in content, "Docs should reference application"
+    assert "{{ cookiecutter" not in content, "No unrendered templates"
+    # Application-specific content
+    package_name = application_context["project_name"].replace("-", "_").lower()
+    assert f"from {package_name}.main import main" in content, "Should have main import"
+
+
+def test_library_docs_content(library_project: Result) -> None:
+    """Test that library docs have correct content."""
+    index_path = os.path.join(library_project.project_path, "docs/index.md")
+    with open(index_path) as f:
+        content = f.read()
+    assert "library" in content, "Docs should reference library"
+    assert "{{ cookiecutter" not in content, "No unrendered templates"
+    # Library-specific content
+    package_name = library_context["project_name"].replace("-", "_").lower()
+    assert f"from {package_name} import Example" in content, "Should have Example import"
