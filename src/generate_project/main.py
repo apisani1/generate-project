@@ -483,7 +483,7 @@ def read_json_file(config_path: Path) -> Dict:
         sys.exit(1)
 
 
-def read_ymal_file(config_path: Path) -> Dict:
+def read_yaml_file(config_path: Path) -> Dict:
     """
     Read a YAML configuration file and return its contents as a dictionary.
 
@@ -498,7 +498,7 @@ def read_ymal_file(config_path: Path) -> Dict:
 
     try:
         with open(config_path, "r") as f:
-            return yaml.safe_load(f)
+            return yaml.safe_load(f) or {}
     except yaml.YAMLError as e:
         print_colored(f"Error reading YAML configuration file: {e}", Colors.RED)
         sys.exit(1)
@@ -523,39 +523,46 @@ def overwrite_default_values(default_config: Dict, user_config: Dict) -> Dict:
     return updated_config
 
 
-def build_menu_from_config(parser: argparse.ArgumentParser, config: Dict) -> None:
+def build_menu_from_config(
+    parser: argparse.ArgumentParser,
+    config: Dict,
+    exclude: Optional[List[str]] = None,
+    use_defaults: bool = True,
+) -> None:
     """
     Build a menu from the provided configuration dictionary.
 
     Args:
         parser (argparse.ArgumentParser): The argument parser to which the menu will be added.
         config (dict): A dictionary containing the menu configuration.
+        exclude (list): Keys to exclude from the menu.
+        use_defaults (bool): If True, use config values as argparse defaults. If False, use None
+            as default so only explicitly provided args are captured (useful for config command).
     """
     if not isinstance(config, dict):
         raise ValueError("Config must be a dictionary.")
 
+    skip_keys = set(exclude or [])
     for key, value in config.items():
+        if key in skip_keys:
+            continue
         if not isinstance(value, str):
             raise ValueError(f"Invalid configuration for key '{key}': expected string value.")
-        parser.add_argument(f"--{key}", type=str, default=value, help=f"Set {key} (default: {value})")
+        default = value if use_defaults else None
+        parser.add_argument(f"--{key}", type=str, default=default, help=f"Set {key} (default: {value})")
 
 
-def update_config_file(user_config_file_path: Path, cookiecutter_config: Dict, user_config: Dict, args: Dict) -> None:
+def update_config_file(user_config_file_path: Path, user_config: Dict, args: Dict) -> None:
     """
     Update the user configuration file with the provided values.
 
     Args:
         user_config_file_path (Path): Path to the user configuration file.
-        cookiecutter_config (dict): The cookiecutter configuration.
         user_config (dict): The current user configuration.
-        args (dict): Values to update the configuration.
+        args (dict): Pre-filtered values to update the configuration.
     """
     updated_config = user_config.copy()
-    for key, value in args.items():
-        if key == "project_name":
-            continue
-        if key in cookiecutter_config and value is not None:
-            updated_config[key] = value
+    updated_config.update(args)
 
     try:
         with open(user_config_file_path, "w") as f:
@@ -649,7 +656,7 @@ def main() -> None:
     global_config_file_path = Path(__file__).parent / "templates" / "poetry-template" / "cookiecutter.json"
     cookiecutter_config = read_json_file(global_config_file_path)
     user_config_file_path = Path(__file__).parent / "templates" / "config.yaml"
-    user_config = read_ymal_file(user_config_file_path).get("default_context", {})
+    user_config = read_yaml_file(user_config_file_path).get("default_context", {})
     config = overwrite_default_values(cookiecutter_config, user_config)
 
     # Create main parser
@@ -679,8 +686,8 @@ def main() -> None:
     # Add project name as positional argument to generate command
     generate_parser.add_argument("project_name", help="Name of the project to create")
 
-    # Add project configuration arguments to generate parser
-    build_menu_from_config(generate_parser, config)
+    # Add project configuration arguments to generate parser (exclude computed/flag-controlled keys)
+    build_menu_from_config(generate_parser, config, exclude=["project_type", "project_name"])
 
     # Add behavior flags to generate parser
     generate_parser.add_argument(
@@ -737,8 +744,13 @@ def main() -> None:
         epilog=CONFIG_EPILOG,
     )
 
-    # Add only project configuration arguments to config parser
-    build_menu_from_config(config_parser, config)
+    # Add only project configuration arguments to config parser (exclude computed keys, no defaults)
+    build_menu_from_config(
+        config_parser,
+        config,
+        exclude=["project_type", "project_name", "package_name", "description"],
+        use_defaults=False,
+    )
 
     # Parse arguments
     args = parser.parse_args()
@@ -750,8 +762,12 @@ def main() -> None:
 
     # Handle config command
     if args.command == "config":
-        # print_args(**args.__dict__)
-        update_config_file(user_config_file_path, cookiecutter_config, user_config, args.__dict__)
+        # Check if any config values were explicitly provided
+        config_args = {k: v for k, v in args.__dict__.items() if k in cookiecutter_config and v is not None}
+        if not config_args:
+            config_parser.print_help()
+            sys.exit(1)
+        update_config_file(user_config_file_path, user_config, config_args)
         print_colored("Configuration updated successfully!", Colors.GREEN)
         print_colored(f"Updated file: {user_config_file_path}", Colors.GREEN)
         sys.exit(0)
@@ -768,7 +784,7 @@ def main() -> None:
         if args.create_public or args.create_secrets:
             args.create_github = True
 
-        # Convert --library flag to project_type for cookiecutter
+        # Set project_type from --library flag
         args.project_type = "library" if args.is_library else "application"
 
         # Generate the project
