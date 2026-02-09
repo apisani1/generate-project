@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.2.1] - 2026-02-08
+
+# Release v1.2.1 - Config and Generate Command Fixes
+
+## Overview
+
+This patch release fixes several bugs in the `config` and `generate` commands, improving argument handling, error safety, and code quality.
+
+## Bug Fixes
+
+### Config Command
+- **Fix crash on empty config.yaml**: `yaml.safe_load()` returning `None` for an empty file no longer causes an `AttributeError`
+- **Fix config writing all defaults**: Running `config --author_name "John"` now only writes the provided value instead of dumping all cookiecutter defaults to `config.yaml`
+- **Show help when no args provided**: `generate-project config` with no arguments now displays help instead of silently writing defaults
+
+### Generate Command
+- **Fix extra args leaking to cookiecutter**: Internal args (`command`, `is_library`) were being passed through to cookiecutter as template variables
+- **Fix broad exception handling**: Narrowed a catch-all `except Exception` to `subprocess.CalledProcessError` when adding git remote
+- **Remove unreachable code**: Removed dead `--secrets requires --github` warning that could never trigger
+
+### Code Quality
+- **Fix typos**: `read_ymal_file` → `read_yaml_file`, `missing_enviroment_secrets` → `missing_environment_secrets`
+- **Simplify `update_config_file`**: Removed redundant filtering logic and unused parameter
+
+## CLI Changes
+
+The following non-functional or misleading CLI options have been removed:
+
+| Removed Option | Reason | Alternative |
+|---------------|--------|-------------|
+| `config --project_type` | Was ignored by generate command | Use `generate --library` |
+| `config --project_name` | Should not have a default value | Positional arg in generate |
+| `generate --project_type` | Was silently overwritten | Use `generate --library` |
+
+## Upgrade Notes
+
+- If you used `generate-project config --project_type library`, use `generate-project generate --library` instead
+- The `config.yaml` file format is unchanged; existing configurations will continue to work
+
+
 ## [1.2.0] - 2026-02-06
 
 # Release v1.2.0 - Library vs Application Support
