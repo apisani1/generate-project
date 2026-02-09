@@ -70,7 +70,7 @@ function venv {
 
     # Manually deactivate regular virtual environment if active
     if [ -n "$VIRTUAL_ENV" ]; then
-        echo "Deactivating virtual environment: $(basename $VIRTUAL_ENV)"
+        echo "Deactivating virtual environment: $(basename "$VIRTUAL_ENV")"
         # Clean all venv-related variables
         unset VIRTUAL_ENV PYTHONHOME
         # Restore original PATH (remove venv paths)

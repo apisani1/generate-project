@@ -71,7 +71,7 @@ function venv {
 
     # Manually deactivate regular virtual environment if active
     if [ -n "$VIRTUAL_ENV" ]; then
-        echo "Deactivating virtual environment: $(basename $VIRTUAL_ENV)"
+        echo "Deactivating virtual environment: $(basename "$VIRTUAL_ENV")"
         # Clean all venv-related variables
         unset VIRTUAL_ENV PYTHONHOME
         # Restore original PATH (remove venv paths)
@@ -84,7 +84,7 @@ function venv {
     fi
 
     # Ensure clean environment (comprehensive cleanup)
-    unset VIRTUAL_ENV PYTHONHOME
+    unset VIRTUAL_ENV POETRY_ACTIVE PYTHONHOME
 
     # Create venv and activate it
     uv venv
@@ -102,7 +102,7 @@ function lock {
 function kernel {
     echo "Installing Jupyter kernel..."
     PYTHON_VERSION=$(uv run python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-    PROJECT_NAME=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['name'])")
+    PROJECT_NAME=$(grep -m1 '^name' pyproject.toml | sed 's/.*"\(.*\)".*/\1/')
     uv run python -m ipykernel install --user \
         --name="$PROJECT_NAME" \
         --display-name="Python $PYTHON_VERSION ($PROJECT_NAME)"
@@ -111,7 +111,7 @@ function kernel {
 # Remove the Jupyter kernel for the current project
 function remove:kernel {
     echo "Removing Jupyter kernel..."
-    PROJECT_NAME=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['name'])")
+    PROJECT_NAME=$(grep -m1 '^name' pyproject.toml | sed 's/.*"\(.*\)".*/\1/')
     uv run jupyter kernelspec remove "$PROJECT_NAME" -y
 }
 
