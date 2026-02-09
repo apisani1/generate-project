@@ -115,7 +115,7 @@ def generate_project(
                 f"Warning: .env file not found at {env_file}, proceeding with existing environment variables",
                 Colors.YELLOW,
             )
-        missing_vars = missing_enviroment_secrets(TOKEN_NAMES)
+        missing_vars = missing_environment_secrets(TOKEN_NAMES)
         if len(missing_vars) > 0:
             print_colored("Error: Cannot create GitHub secrets, .pypirc file or .env file", Colors.RED)
             print_colored(f"The following environment variables are missing: {', '.join(missing_vars)}", Colors.RED)
@@ -201,7 +201,7 @@ def generate_project(
                         run_command(
                             ["git", "remote", "add", "origin", f"git@github.com:{github_username}/{project_name}.git"]
                         )
-                    except Exception:
+                    except subprocess.CalledProcessError:
                         print_colored("Remote 'origin' already exists, skipping adding remote.", Colors.YELLOW)
                 else:
                     # Repo doesn't exist, create it
@@ -229,8 +229,6 @@ def generate_project(
                     create_github_secrets(full_repo_name, TOKEN_NAMES)
             else:
                 print_colored("GitHub repository creation failed due to CLI issues.", Colors.RED)
-        elif create_secrets:
-            print_colored("Warning: --secrets requires --github flag", Colors.YELLOW)
 
     # Success message
     print_colored(f"Project '{project_name}' has been successfully created!", Colors.GREEN)
@@ -322,7 +320,7 @@ def expand_template(
             shutil.move(str(item), str(dest))
 
 
-def missing_enviroment_secrets(secrets: List[str]) -> List[str]:
+def missing_environment_secrets(secrets: List[str]) -> List[str]:
     """Check if required environment variables for secrets are set."""
     missing_vars = [var for var in secrets if not os.environ.get(var)]
     return missing_vars
@@ -762,6 +760,7 @@ def main() -> None:
 
     # Handle config command
     if args.command == "config":
+        # print_args(**args.__dict__)
         # Check if any config values were explicitly provided
         config_args = {k: v for k, v in args.__dict__.items() if k in cookiecutter_config and v is not None}
         if not config_args:
@@ -787,9 +786,11 @@ def main() -> None:
         # Set project_type from --library flag
         args.project_type = "library" if args.is_library else "application"
 
-        # Generate the project
+        # Filter out non-generate args before passing to generate_project
         # print_args(**args.__dict__)
-        generate_project(**args.__dict__)
+        generate_args = {k: v for k, v in args.__dict__.items() if k not in ("command", "is_library")}
+        print_args(**generate_args)
+        generate_project(**generate_args)
 
 
 if __name__ == "__main__":
