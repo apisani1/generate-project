@@ -41,7 +41,7 @@ def test_custom_project_generation(custom_project: Result) -> None:
         print(f"pyproject.toml content: {pyproject_content}...")  # Print first 100 characters for debugging
     assert f"name = \"{custom_context['project_name']}\"" in pyproject_content
     assert f"version = \"{custom_context['version']}\"" in pyproject_content
-    assert f"python = \"{custom_context['python_version']}\"" in pyproject_content
+    assert f"python = \"^{custom_context['python_min_version']}\"" in pyproject_content
 
 
 def test_python_syntax(default_project: Result) -> None:

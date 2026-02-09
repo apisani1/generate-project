@@ -11,7 +11,14 @@ from typing import (
 import pytest
 
 from pytest_cookies.plugin import Result
-from tests.project_structure import application_context, custom_context, library_context
+from tests.project_structure import (
+    application_context,
+    custom_context,
+    library_context,
+    uv_application_context,
+    uv_custom_context,
+    uv_library_context,
+)
 
 
 # import sys
@@ -25,8 +32,10 @@ from tests.project_structure import application_context, custom_context, library
 # sys.path.insert(0, str(TESTS_DIR_PARENT))
 
 TEMPLATE_DIR = str(Path("./src/generate_project/templates/poetry-template").resolve())
+UV_TEMPLATE_DIR = str(Path("./src/generate_project/templates/uv-template").resolve())
 
 print(f"Using template directory: {TEMPLATE_DIR}")
+print(f"Using UV template directory: {UV_TEMPLATE_DIR}")
 
 
 @contextmanager
@@ -83,4 +92,51 @@ def library_project(cookies: Result) -> Generator[Result, None, None]:
 def application_project(cookies: Result) -> Generator[Result, None, None]:
     """Create an application project using the template."""
     with bake_in_temp_dir(cookies, extra_context=application_context) as result:
+        yield result
+
+
+# UV template fixtures
+
+
+@contextmanager
+def bake_uv_in_temp_dir(cookies: Result, **kwargs: Any) -> Generator[Result, None, None]:
+    """Create a temporary directory and bake the UV cookiecutter template."""
+    try:
+        result = cookies.bake(template=UV_TEMPLATE_DIR, extra_context=kwargs.get("extra_context", {}))
+
+        if result.exception:
+            raise result.exception
+
+        yield result
+
+    except Exception as e:
+        print(f"Error baking UV template: {e}")
+        raise
+
+
+@pytest.fixture
+def uv_default_project(cookies: Result) -> Generator[Result, None, None]:
+    """Create a default project using the UV template."""
+    with bake_uv_in_temp_dir(cookies) as result:
+        yield result
+
+
+@pytest.fixture
+def uv_custom_project(cookies: Result) -> Generator[Result, None, None]:
+    """Create a customized project using the UV template."""
+    with bake_uv_in_temp_dir(cookies, extra_context=uv_custom_context) as result:
+        yield result
+
+
+@pytest.fixture
+def uv_library_project(cookies: Result) -> Generator[Result, None, None]:
+    """Create a library project using the UV template."""
+    with bake_uv_in_temp_dir(cookies, extra_context=uv_library_context) as result:
+        yield result
+
+
+@pytest.fixture
+def uv_application_project(cookies: Result) -> Generator[Result, None, None]:
+    """Create an application project using the UV template."""
+    with bake_uv_in_temp_dir(cookies, extra_context=uv_application_context) as result:
         yield result

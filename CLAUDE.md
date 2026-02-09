@@ -68,7 +68,8 @@ This is a Python project generator tool that creates well-structured Python proj
 
 **Template System** (`src/generate_project/templates/`):
 - `poetry-template/`: Cookiecutter template for Poetry-based Python projects
-- `cookiecutter.json`: Template configuration with project parameters
+- `uv-template/`: Cookiecutter template for UV-based Python projects (hatchling build backend)
+- `cookiecutter.json`: Template configuration with project parameters (shared schema)
 - `config.yaml`: User-specific default values for template parameters
 
 **Configuration Management**:
@@ -78,7 +79,8 @@ This is a Python project generator tool that creates well-structured Python proj
 
 ### Key Features
 
-1. **Project Generation**: Creates complete Python project structure with Poetry, testing, linting, documentation, and CI/CD
+1. **Project Generation**: Creates complete Python project structure with Poetry or UV, testing, linting, documentation, and CI/CD
+5. **Package Manager Selection**: Choose between Poetry (default) and UV via `--manager` flag
 2. **GitHub Integration**: Optional GitHub repository creation with automated secret setup
 3. **Publishing Setup**: Automated PyPI token configuration for both local and CI/CD publishing
 4. **Template Customization**: Flexible cookiecutter-based templating system
@@ -96,7 +98,8 @@ Code formatting follows Black style with 119 character line length. All tools ar
 ### Testing Strategy
 
 Tests are located in `tests/` and use pytest with the following specialized test modules:
-- `test_bake.py`: Tests cookiecutter template generation
+- `test_bake.py`: Tests Poetry cookiecutter template generation
+- `test_uv_bake.py`: Tests UV cookiecutter template generation
 - `test_dependencies.py`: Validates dependency management
 - `test_structure.py`: Verifies generated project structure
 - `test_docs.py`: Tests documentation generation

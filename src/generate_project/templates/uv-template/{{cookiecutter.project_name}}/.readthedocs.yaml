@@ -1,0 +1,10 @@
+version: 2
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "{{ cookiecutter.python_min_version }}"
+  commands:
+    - pip install uv
+    - uv sync --group docs
+    - uv run python -m sphinx -T -b html -d _build/doctrees -D language=en docs $READTHEDOCS_OUTPUT/html

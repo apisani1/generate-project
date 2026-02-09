@@ -41,7 +41,7 @@ custom_context = {
     "github_username": "testuser",
     "version": "0.2.0",
     "description": "A test project created for testing purposes",
-    "python_version": "3.11",
+    "python_min_version": "3.11",
 }
 
 library_context = {
@@ -51,7 +51,7 @@ library_context = {
     "github_username": "testuser",
     "version": "0.1.0",
     "description": "A test library project",
-    "python_version": "3.11",
+    "python_min_version": "3.11",
     "project_type": "library",
 }
 
@@ -62,6 +62,39 @@ application_context = {
     "github_username": "testuser",
     "version": "0.1.0",
     "description": "A test application project",
-    "python_version": "3.11",
+    "python_min_version": "3.11",
+    "project_type": "application",
+}
+
+# UV template contexts
+uv_custom_context = {
+    "project_name": "test-uv-project",
+    "author_name": "Test User",
+    "email": "test@example.com",
+    "github_username": "testuser",
+    "version": "0.2.0",
+    "description": "A test UV project created for testing purposes",
+    "python_min_version": "3.11",
+}
+
+uv_library_context = {
+    "project_name": "test-uv-library",
+    "author_name": "Test User",
+    "email": "test@example.com",
+    "github_username": "testuser",
+    "version": "0.1.0",
+    "description": "A test UV library project",
+    "python_min_version": "3.11",
+    "project_type": "library",
+}
+
+uv_application_context = {
+    "project_name": "test-uv-application",
+    "author_name": "Test User",
+    "email": "test@example.com",
+    "github_username": "testuser",
+    "version": "0.1.0",
+    "description": "A test UV application project",
+    "python_min_version": "3.11",
     "project_type": "application",
 }

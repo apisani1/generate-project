@@ -3,7 +3,7 @@ version: 2
 build:
   os: ubuntu-22.04
   tools:
-    python: "{{ cookiecutter.python_version.lstrip('^~>=<!').split(',')[0].split()[0] }}"
+    python: "{{ cookiecutter.python_min_version }}"
   commands:
     - pip install poetry
     - poetry config virtualenvs.create false

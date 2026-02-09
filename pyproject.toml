@@ -152,6 +152,7 @@ exclude = [
     '^tests/test.*\.py$',
     '^docs/.*\.py$',
     '{{cookiecutter.project_name}}',
+    'templates/.*/hooks/',
 ]
 python_version = "3.10"
 warn_unused_configs = true

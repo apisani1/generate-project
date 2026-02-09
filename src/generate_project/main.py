@@ -93,6 +93,7 @@ def generate_project(
     project_name: str,
     template_path: Path,
     env_file: Path,
+    package_manager: str = "poetry",
     install_deps: bool = True,
     init_git: bool = True,
     create_github: bool = False,
@@ -161,9 +162,12 @@ def generate_project(
     if install_deps:
         print_colored("Installing dependencies...", Colors.BLUE)
         try:
-            run_command(["poetry", "install"], extra_env={"POETRY_VIRTUALENVS_IN_PROJECT": "true"})
+            if package_manager == "uv":
+                run_command(["uv", "sync"])
+            else:
+                run_command(["poetry", "install"], extra_env={"POETRY_VIRTUALENVS_IN_PROJECT": "true"})
         except subprocess.CalledProcessError:
-            print_colored("Warning: Poetry install failed", Colors.YELLOW)
+            print_colored(f"Warning: {package_manager} install failed", Colors.YELLOW)
 
     # Initialize Git
     if init_git:
@@ -573,7 +577,7 @@ def update_config_file(user_config_file_path: Path, user_config: Dict, args: Dic
 # Main epilog
 MAIN_EPILOG = """
 Available Commands:
-  generate    Create a new Python project with Poetry, testing, and CI/CD
+  generate    Create a new Python project with Poetry or UV, testing, and CI/CD
   config      Configure default values for project generation
 
 Quick Start:
@@ -600,7 +604,8 @@ Publishing Setup:
   - Creates GitHub repository secrets from .env tokens
 
 Examples:
-  %(prog)s my-project                                                # Basic project
+  %(prog)s my-project                                                # Basic project (Poetry)
+  %(prog)s --manager uv my-project                                   # Basic project (UV)
   %(prog)s --local-env my-project                                    # Create local .env file with auth tokens
   %(prog)s --github my-project                                       # Create GitHub repo
   %(prog)s --public my-project                                       # Public GitHub repo
@@ -625,7 +630,8 @@ Examples:
   %(prog)s --author_name "John Doe"                # Set default author
   %(prog)s --author_email "john@example.com"       # Set default email
   %(prog)s --github_username "johndoe"             # Set GitHub username
-  %(prog)s --python_version "^3.11"                # Set Python version
+  %(prog)s --python_min_version "3.11"              # Set minimum Python version
+  %(prog)s --manager uv                             # Set default package manager to UV
 
   # Set multiple values at once
   %(prog)s --author_name "Jane Smith" --author_email "jane@example.com"
@@ -659,7 +665,7 @@ def main() -> None:
 
     # Create main parser
     parser = argparse.ArgumentParser(
-        description="Create and configure Python projects managed with Poetry.",
+        description="Create and configure Python projects with Poetry or UV.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=MAIN_EPILOG,
     )
@@ -676,7 +682,7 @@ def main() -> None:
     generate_parser = subparsers.add_parser(
         "generate",
         help="Generate a new Python project",
-        description="Create a new Python project managed with Poetry.",
+        description="Create a new Python project managed with Poetry or UV.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=GENERATE_EPILOG,
     )
@@ -733,6 +739,16 @@ def main() -> None:
         help="Create a library project instead of an application (no CLI entry point)",
     )
 
+    # Add package manager flag to generate parser
+    generate_parser.add_argument(
+        "--manager",
+        dest="package_manager",
+        type=str,
+        choices=["poetry", "uv"],
+        default=None,
+        help="Package manager for the generated project (default: poetry)",
+    )
+
     # Create the config subparser
     config_parser = subparsers.add_parser(
         "config",
@@ -750,6 +766,16 @@ def main() -> None:
         use_defaults=False,
     )
 
+    # Add package manager flag to config parser
+    config_parser.add_argument(
+        "--manager",
+        dest="package_manager",
+        type=str,
+        choices=["poetry", "uv"],
+        default=None,
+        help="Set default package manager (poetry or uv)",
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -762,7 +788,8 @@ def main() -> None:
     if args.command == "config":
         # print_args(**args.__dict__)
         # Check if any config values were explicitly provided
-        config_args = {k: v for k, v in args.__dict__.items() if k in cookiecutter_config and v is not None}
+        valid_config_keys = set(cookiecutter_config.keys()) | {"package_manager"}
+        config_args = {k: v for k, v in args.__dict__.items() if k in valid_config_keys and v is not None}
         if not config_args:
             config_parser.print_help()
             sys.exit(1)
@@ -776,8 +803,14 @@ def main() -> None:
         # Set defaults that depend on script location
         if args.env_file is None:
             args.env_file = find_dotenv(usecwd=True)
+
+        # Determine package manager (CLI flag > config > default)
+        if args.package_manager is None:
+            args.package_manager = user_config.get("package_manager", "poetry")
+
+        # Set template path based on package manager (if not explicitly provided)
         if args.template_path is None:
-            args.template_path = Path(__file__).parent / "templates" / "poetry-template"
+            args.template_path = Path(__file__).parent / "templates" / f"{args.package_manager}-template"
 
         # --public or --secrets implies --github
         if args.create_public or args.create_secrets:
@@ -789,7 +822,6 @@ def main() -> None:
         # Filter out non-generate args before passing to generate_project
         # print_args(**args.__dict__)
         generate_args = {k: v for k, v in args.__dict__.items() if k not in ("command", "is_library")}
-        print_args(**generate_args)
         generate_project(**generate_args)
 
 
