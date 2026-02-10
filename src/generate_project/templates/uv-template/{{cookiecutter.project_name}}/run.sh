@@ -61,12 +61,13 @@ function venv {
     # Manually deactivate conda environment if active
     if [ -n "$CONDA_DEFAULT_ENV" ]; then
         echo "Deactivating conda environment: $CONDA_DEFAULT_ENV"
-        # Clean all conda-related variables
-        unset CONDA_DEFAULT_ENV CONDA_PREFIX CONDA_PYTHON_EXE CONDA_PROMPT_MODIFIER
-        # Restore original PATH (remove conda paths)
-        if [ -n "$_CONDA_OLD_PATH" ]; then
-            export PATH="$_CONDA_OLD_PATH"
+        # Remove conda environment bin directory from PATH (must happen before unsetting CONDA_PREFIX)
+        if [ -n "$CONDA_PREFIX" ]; then
+            PATH=$(echo "$PATH" | sed "s|${CONDA_PREFIX}/bin:||g; s|:${CONDA_PREFIX}/bin||g; s|^${CONDA_PREFIX}/bin$||g")
+            export PATH
         fi
+        # Clean all conda-related variables
+        unset CONDA_DEFAULT_ENV CONDA_PREFIX CONDA_PYTHON_EXE CONDA_PROMPT_MODIFIER CONDA_SHLVL
     fi
 
     # Manually deactivate regular virtual environment if active
@@ -86,10 +87,19 @@ function venv {
     # Ensure clean environment (comprehensive cleanup)
     unset VIRTUAL_ENV POETRY_ACTIVE PYTHONHOME
 
-    # Create venv and activate it
-    uv venv
+    # Create venv only if it doesn't exist
+    if [ ! -d ".venv" ]; then
+        uv venv
+    fi
     source .venv/bin/activate
+    export UV_ACTIVE=1
     exec "$SHELL"
+}
+
+function venv:clean {
+    echo "Recreating virtual environment..."
+    rm -rf .venv
+    venv
 }
 
 # Lock dependencies without installing them
@@ -711,6 +721,7 @@ function help {
     echo "  install:all          - Install all dependencies"
     echo "  update               - Update dependencies"
     echo "  venv                 - Create and activate virtual environment"
+    echo "  venv:clean           - Delete and recreate virtual environment"
     echo "  lock                 - Lock dependencies"
     echo "  kernel               - Create Jupyter kernel"
     echo "  remove:kernel        - Remove Jupyter kernel"

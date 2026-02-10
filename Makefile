@@ -1,4 +1,4 @@
-.PHONY: all format lint test tests help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc release-beta release-alpha release-major-a release-major-b release-major-rc release-minor-a release-minor-b release-minor-rc release-micro-a release-micro-b release-micro-rc rollback
+.PHONY: all format lint test tests help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc release-beta release-alpha release-major-a release-major-b release-major-rc release-minor-a release-minor-b release-minor-rc release-micro-a release-micro-b release-micro-rc rollback venv venv-clean
 
 ######################
 # This automation tasks were inspired by automation patterns from
@@ -40,6 +40,9 @@ update:
 # Create a new virtual environment
 venv:
 	@./run.sh venv
+
+venv-clean:
+	@./run.sh venv:clean
 
 # Lock dependencies without installing them
 lock:
