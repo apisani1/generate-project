@@ -102,8 +102,8 @@ jobs:
       # Always test on TestPyPI first
       - name: Test PyPI release
         env:
-          POETRY_PYPI_TOKEN_TESTPYPI: ${{ "{{" }} secrets.TEST_PYPI_TOKEN {{ "}}" }}
-        run: ./run.sh publish:test
+          TEST_PYPI_TOKEN: ${{ "{{" }} secrets.TEST_PYPI_TOKEN {{ "}}" }}
+        run: ./run.sh publish:test:strict
 
       - name: Test installation from TestPyPI
         run: |
@@ -131,8 +131,8 @@ jobs:
       - name: Publish to PyPI
         if: steps.release-info.outputs.release_type == 'release'
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ "{{" }} secrets.PYPI_TOKEN {{ "}}" }}
-        run: ./run.sh publish
+          PYPI_TOKEN: ${{ "{{" }} secrets.PYPI_TOKEN {{ "}}" }}
+        run: ./run.sh publish:strict
 
       # Update ReadTheDocs for all tagged versions
       # Note: Set RTD default version to "stable" in project settings for best UX
