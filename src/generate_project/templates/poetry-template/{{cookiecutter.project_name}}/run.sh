@@ -615,6 +615,60 @@ function release:alpha {
     python scripts/release.py create micro --pre a --changes "$changes"
 }
 
+function release:major:a {
+    echo "Creating major alpha release..."
+    changes=$(get:changes)
+    python scripts/release.py create major --pre a --changes "$changes"
+}
+
+function release:major:b {
+    echo "Creating major beta release..."
+    changes=$(get:changes)
+    python scripts/release.py create major --pre b --changes "$changes"
+}
+
+function release:major:rc {
+    echo "Creating major release candidate..."
+    changes=$(get:changes)
+    python scripts/release.py create major --pre rc --changes "$changes"
+}
+
+function release:minor:a {
+    echo "Creating minor alpha release..."
+    changes=$(get:changes)
+    python scripts/release.py create minor --pre a --changes "$changes"
+}
+
+function release:minor:b {
+    echo "Creating minor beta release..."
+    changes=$(get:changes)
+    python scripts/release.py create minor --pre b --changes "$changes"
+}
+
+function release:minor:rc {
+    echo "Creating minor release candidate..."
+    changes=$(get:changes)
+    python scripts/release.py create minor --pre rc --changes "$changes"
+}
+
+function release:micro:a {
+    echo "Creating micro alpha release..."
+    changes=$(get:changes)
+    python scripts/release.py create micro --pre a --changes "$changes"
+}
+
+function release:micro:b {
+    echo "Creating micro beta release..."
+    changes=$(get:changes)
+    python scripts/release.py create micro --pre b --changes "$changes"
+}
+
+function release:micro:rc {
+    echo "Creating micro release candidate..."
+    changes=$(get:changes)
+    python scripts/release.py create micro --pre rc --changes "$changes"
+}
+
 # Rollback release
 function rollback {
     echo "Rolling back last release..."
@@ -630,6 +684,15 @@ function help:release {
     echo "  release:rc      - Create release candidate"
     echo "  release:beta    - Create beta release"
     echo "  release:alpha   - Create alpha release"
+    echo "  release:major:a - Create major alpha release"
+    echo "  release:major:b - Create major beta release"
+    echo "  release:major:rc- Create major release candidate"
+    echo "  release:minor:a - Create minor alpha release"
+    echo "  release:minor:b - Create minor beta release"
+    echo "  release:minor:rc- Create minor release candidate"
+    echo "  release:micro:a - Create micro alpha release"
+    echo "  release:micro:b - Create micro beta release"
+    echo "  release:micro:rc- Create micro release candidate"
     echo "  rollback        - Rollback last release"
 }
 
@@ -699,6 +762,15 @@ function help {
     echo "  release:rc           - Create release candidate"
     echo "  release:beta         - Create beta release"
     echo "  release:alpha        - Create alpha release"
+    echo "  release:major:a      - Create major alpha release"
+    echo "  release:major:b      - Create major beta release"
+    echo "  release:major:rc     - Create major release candidate"
+    echo "  release:minor:a      - Create minor alpha release"
+    echo "  release:minor:b      - Create minor beta release"
+    echo "  release:minor:rc     - Create minor release candidate"
+    echo "  release:micro:a      - Create micro alpha release"
+    echo "  release:micro:b      - Create micro beta release"
+    echo "  release:micro:rc     - Create micro release candidate"
     echo "  rollback             - Rollback last release"
     echo "  help:release         - Show detailed release help"
     echo ""

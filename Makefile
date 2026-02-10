@@ -1,4 +1,4 @@
-.PHONY: all format lint test tests help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc rollback
+.PHONY: all format lint test tests help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc release-beta release-alpha release-major-a release-major-b release-major-rc release-minor-a release-minor-b release-minor-rc release-micro-a release-micro-b release-micro-rc rollback
 
 ######################
 # This automation tasks were inspired by automation patterns from
@@ -215,6 +215,33 @@ release-beta:
 
 release-alpha:
 	@./run.sh release:alpha
+
+release-major-a:
+	@./run.sh release:major:a
+
+release-major-b:
+	@./run.sh release:major:b
+
+release-major-rc:
+	@./run.sh release:major:rc
+
+release-minor-a:
+	@./run.sh release:minor:a
+
+release-minor-b:
+	@./run.sh release:minor:b
+
+release-minor-rc:
+	@./run.sh release:minor:rc
+
+release-micro-a:
+	@./run.sh release:micro:a
+
+release-micro-b:
+	@./run.sh release:micro:b
+
+release-micro-rc:
+	@./run.sh release:micro:rc
 
 # Rollback release
 rollback:
