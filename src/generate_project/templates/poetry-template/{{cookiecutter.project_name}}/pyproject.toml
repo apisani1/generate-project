@@ -44,6 +44,7 @@ python = "^{{ cookiecutter.python_min_version }}"
 optional = true
 
 [tool.poetry.group.dev.dependencies]
+ipykernel = ">=6.29.0"
 
 
 [tool.poetry.group.test]
