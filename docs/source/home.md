@@ -3,7 +3,7 @@ A Python project folder generator with support for **Poetry** and **UV** package
 
 ## Features
 
-📦 Poetry or UV for dependency management and packaging
+📦 Poetry or UV for dependency management and packaging   
 🧹 Code quality tools including  black, isort, flake8, mypy and pylint        
 📚 Sphinx based documentation with auto-generated API docs and live preview   
 ✅ Testing framework with pytest and test coverage reports   
