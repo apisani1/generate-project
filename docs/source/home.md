@@ -1,9 +1,9 @@
 # Generate Project 
-A Python project folder generator based on Poetry for dependency and package management. The generated folder provides everything you need to get started with a well-structured Python project, including development tasks for formatting, linting, documentation, testing, and CI/CD.
+A Python project folder generator with support for **Poetry** and **UV** package managers. The generated folder provides everything you need to get started with a well-structured Python project, including development tasks for formatting, linting, documentation, testing, and CI/CD.
 
 ## Features
 
-📦 Poetry for dependency management and packaging    
+📦 Poetry or UV for dependency management and packaging
 🧹 Code quality tools including  black, isort, flake8, mypy and pylint        
 📚 Sphinx based documentation with auto-generated API docs and live preview   
 ✅ Testing framework with pytest and test coverage reports   
@@ -33,6 +33,12 @@ Or, if you use Poetry:
 poetry add generate-project
 ```
 
+Or, if you use UV:
+
+```bash
+uv add generate-project
+```
+
 ## Quick Start
 
 ### Basic Usage
@@ -44,7 +50,7 @@ generate-project generate "project-name" \
 --author_name="Your Name" \
 --email="your.email@example.com" \
 --github_username="yourusername" \
---python_version="3.11"
+--python_min_version="3.11"
 ...
 ```
 
@@ -52,15 +58,15 @@ generate-project generate "project-name" \
 
 These are the most important project configuration options:
 
-| Option | Description |   
-|--------|-------------|    
-| `package_name` | Python package name (defaults to project_name)|   
-| `author_name` | Author's name |   
-| `email` | Author's email |   
-| `github_username` | GitHub username |   
-| `version` | Initial version number |   
-| `description` | Short project description |   
-| `python_version` | Python version requirement | 
+| Option | Description |
+|--------|-------------|
+| `package_name` | Python package name (defaults to project_name)|
+| `author_name` | Author's name |
+| `email` | Author's email |
+| `github_username` | GitHub username |
+| `version` | Initial version number |
+| `description` | Short project description |
+| `python_min_version` | Minimum Python version |
 
 ### Advanced Usage
 
@@ -70,14 +76,36 @@ generate-project config \
 --author_name="Your Name" \
 --email="your.email@example.com" \
 --github_username="yourusername" \
---python_version="3.11"
+--python_min_version="3.11"
+```
+
+You can also set the default package manager:
+```bash
+generate-project config --manager uv
 ```
 
 and then you can omit the saved configuration options:
 
 ```bash
-generate-project generate "project-name" 
+generate-project generate "project-name"
 ...
+```
+
+## Package Manager
+
+By default, generate-project creates projects using **Poetry**. Use the `--manager` flag to select **UV** instead:
+
+| Manager | Build Backend | Dependency Format | Command |
+|---------|--------------|-------------------|---------|
+| Poetry (default) | poetry-core | `[tool.poetry.dependencies]` | `--manager poetry` |
+| UV | hatchling | `[dependency-groups]` (PEP 735) | `--manager uv` |
+
+```bash
+# Poetry project (default)
+generate-project generate my-project
+
+# UV project
+generate-project generate my-project --manager uv
 ```
 
 ## Project Structure

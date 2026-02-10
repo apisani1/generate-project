@@ -55,7 +55,7 @@ These options configure the project metadata and can be saved as defaults using 
 | `--github_username` | GitHub username for repository creation |
 | `--version` | Initial project version number |
 | `--description` | Short project description |
-| `--python_version` | Python version requirement |
+| `--python_min_version` | Minimum Python version |
 | `--package_name` | Python package name (can be auto-generated from project name) |
 | `--autodoc_mock_imports` | Comma-separated list of modules to mock for Sphinx autodoc |
 | `--complex_mock_modules` | Comma-separated list of complex modules requiring special mocking |
@@ -65,7 +65,7 @@ These options configure the project metadata and can be saved as defaults using 
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--no-install` | Skip installing dependencies with Poetry | Install dependencies |
+| `--no-install` | Skip installing dependencies | Install dependencies |
 | `--no-git` | Skip Git repository initialization | Initialize Git repository |
 
 #### Project Type Options
@@ -73,6 +73,13 @@ These options configure the project metadata and can be saved as defaults using 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--library` | Create a library project (no CLI entry point) | Application project |
+| `--manager` | Package manager: `poetry` or `uv` | `poetry` |
+
+When `--manager uv` is specified:
+- Uses hatchling build backend instead of poetry-core
+- Uses PEP 621 `[project]` metadata and `[dependency-groups]` (PEP 735)
+- CI workflows use `astral-sh/setup-uv` instead of Poetry
+- `run.sh` uses `uv sync`, `uv run`, `uv build`, `uv publish`
 
 When `--library` is specified:
 - No `[project.scripts]` section is added to `pyproject.toml`
@@ -115,7 +122,7 @@ This local `.env` file will be used for manual publishing tasks:
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--env` | Path to .env file containing tokens for repository secrets | `.env` with location auto-detect|
-| `--template` | Path to custom cookiecutter template | Built-in poetry template |
+| `--template` | Path to custom cookiecutter template | Built-in template (selected by `--manager`) |
 
 ### Examples
 
@@ -143,6 +150,12 @@ generate-project generate my-project \
     --github_username="johndoe" \
     --public \
     --secrets \
+```
+
+#### Create UV Project
+
+```bash
+generate-project generate my-project --manager uv
 ```
 
 #### Using Custom Template
@@ -215,7 +228,8 @@ The `config` command accepts the same project configuration options as the `gene
 | `--github_username` | Set default GitHub username |
 | `--version` | Set default initial version |
 | `--description` | Set default project description |
-| `--python_version` | Set default Python version requirement |
+| `--python_min_version` | Set default minimum Python version |
+| `--manager` | Set default package manager (`poetry` or `uv`) |
 | `--autodoc_mock_imports` | Set default autodoc mock imports |
 | `--complex_mock_modules` | Set default complex mock modules |
 | `--google_analytics_id` | Set default Google Analytics ID |
@@ -249,7 +263,7 @@ generate-project config \
 ```bash
 generate-project config \
     --description="My project" \
-    --python_version="ˆ3.10"
+    --python_min_version="3.10" \
     --version="0.0.0"
 ```
 
