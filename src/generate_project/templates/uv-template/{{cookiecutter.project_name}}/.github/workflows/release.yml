@@ -104,7 +104,7 @@ jobs:
           source test_env/bin/activate
           pip install --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple \
-              {{ cookiecutter.package_name }}
+              {{ cookiecutter.project_name }}
           SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
           export PYTHONPATH="${SITE_PACKAGES}:${PYTHONPATH:-}"
           python -c "import {{ cookiecutter.package_name }}; print('Installed version: ' + {{ cookiecutter.package_name }}.__version__)"
