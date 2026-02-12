@@ -23,11 +23,6 @@ dependencies = []
 "Issue Tracker" = "https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}/issues"
 
 [tool.poetry]
-name = "{{ cookiecutter.project_name }}"
-version = "{{ cookiecutter.version }}"
-description = "{{ cookiecutter.description }}"
-authors = ["{{ cookiecutter.author_name }} <{{ cookiecutter.email }}>"]
-readme = "README.md"
 packages = [{ include = "{{ cookiecutter.package_name }}", from = "src" }]
 
 [tool.semantic_release]

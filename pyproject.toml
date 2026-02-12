@@ -32,16 +32,8 @@ generate-project = "generate_project.main:main"
 "Issue Tracker" = "https://github.com/apisani1/generate-project/issues"
 
 [tool.poetry]
-name = "generate-project"
-version = "1.0.2.post1"
-description = "A Python project generator using cookiecutter templates"
-authors = ["Antonio Pisani <antonio.pisani@gmail.com>"]
-readme = "README.md"
 packages = [{ include = "generate_project", from = "src" }]
 include = ["src/generate_project/templates/**/*"]
-
-[tool.poetry.scripts]
-generate-project = "generate_project.main:main"
 
 [tool.semantic_release]
 version_variable = [
