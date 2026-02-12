@@ -316,12 +316,17 @@ def expand_template(
             print_colored("Error: Generated project directory not found", Colors.RED)
             sys.exit(1)
 
-        for item in generated_dir.iterdir():
-            dest = target_dir / item.name
-            if dest.exists():
-                print_colored(f"Error: Cannot move {item.name}, destination already exists", Colors.RED)
-                sys.exit(1)
-            shutil.move(str(item), str(dest))
+        items = list(generated_dir.iterdir())
+        conflicts = [item.name for item in items if (target_dir / item.name).exists()]
+        if conflicts:
+            print_colored(
+                f"Error: Cannot generate into existing directory, conflicting files: {', '.join(conflicts)}",
+                Colors.RED,
+            )
+            sys.exit(1)
+
+        for item in items:
+            shutil.move(str(item), str(target_dir / item.name))
 
 
 def missing_environment_secrets(secrets: List[str]) -> List[str]:

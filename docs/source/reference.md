@@ -408,7 +408,7 @@ Error: Directory <project-name> already exists.
 
 #### Project File Already Exists
 ```
-Error: Cannot move <file name>, destination already exists.
+Error: Cannot generate into existing directory, conflicting files: <file1>, <file2>, ...
 ```
 
 **Solution**: When using `.` as the project name, make sure that the current directory does not contain any files or subdirectories that collide with the project template structure.
