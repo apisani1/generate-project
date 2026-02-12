@@ -62,8 +62,9 @@ def test_application_has_scripts_section(application_project: Result) -> None:
     with open(pyproject_path) as f:
         content = f.read()
     assert "[project.scripts]" in content, "Application should have [project.scripts]"
-    package_name = application_context["project_name"].replace("-", "_").lower()
-    assert f'{package_name} = "{package_name}.main:main"' in content
+    project_name = application_context["project_name"]
+    package_name = project_name.replace("-", "_").lower()
+    assert f'{project_name} = "{package_name}.main:main"' in content
 
 
 def test_library_has_no_scripts_section(library_project: Result) -> None:

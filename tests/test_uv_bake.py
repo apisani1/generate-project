@@ -97,8 +97,9 @@ def test_uv_application_has_scripts_section(uv_application_project: Result) -> N
     with open(pyproject_path) as f:
         content = f.read()
     assert "[project.scripts]" in content, "Application should have [project.scripts]"
-    package_name = uv_application_context["project_name"].replace("-", "_").lower()
-    assert f'{package_name} = "{package_name}.main:main"' in content
+    project_name = uv_application_context["project_name"]
+    package_name = project_name.replace("-", "_").lower()
+    assert f'{project_name} = "{package_name}.main:main"' in content
 
 
 def test_uv_library_has_no_scripts_section(uv_library_project: Result) -> None:
