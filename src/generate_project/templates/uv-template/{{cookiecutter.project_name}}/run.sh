@@ -143,7 +143,7 @@ function get:python:files {
 }
 
 function get:python:files:diff {
-    git diff --name-only --diff-filter=d main | grep -E '\.py$|\.ipynb$' || echo ""
+    git diff --name-only --diff-filter=d HEAD -- src/ tests/ | grep -E '\.py$|\.ipynb$' || echo ""
 }
 
 function get:python:files:tests {
