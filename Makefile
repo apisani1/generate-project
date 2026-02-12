@@ -138,7 +138,31 @@ coverage:
 
 # Help for pytest options
 help-test:
-	@./run.sh help:test
+	@echo '====== Pytest Options ======'
+	@echo ''
+	@echo 'Usage: make test [TEST_FILE=<file>] [PYTEST_ARGS="<args>"]'
+	@echo ''
+	@echo 'Common pytest options (pass via PYTEST_ARGS):'
+	@echo '  -v, --verbose           Show more detailed output'
+	@echo '  -x, --exitfirst         Stop on first failure'
+	@echo '  --pdb                   Start the Python debugger on errors'
+	@echo '  -m MARK                 Only run tests with specific markers'
+	@echo '  -k EXPRESSION           Only run test files that match expression'
+	@echo '  --log-cli-level=INFO    Show log messages in the console'
+	@echo '  --cov=PACKAGE           Measure code coverage for a package'
+	@echo '  --cov-report=html       Generate HTML coverage report'
+	@echo ''
+	@echo 'Examples:'
+	@echo '  make test PYTEST_ARGS="-v"'
+	@echo '  make test-pattern p="test_async"'
+	@echo '  make test-file f=tests/test_example.py PYTEST_ARGS="-v"'
+	@echo '  make test-cov'
+	@echo ''
+	@echo 'Test targets:'
+	@echo '  make test-verbose         - Run tests with verbose output'
+	@echo '  make test-cov             - Run tests with coverage report'
+	@echo '  make test-pattern p=<pat> - Run tests matching pattern'
+	@echo '  make test-file f=<file>   - Run tests in specific file'
 
 ######################
 # DOCUMENTATION
@@ -252,7 +276,23 @@ rollback:
 
 # Helper target to show available release commands
 help-release:
-	@./run.sh help:release
+	@echo 'Available release commands:'
+	@echo '  make release-major      - Create major release'
+	@echo '  make release-minor      - Create minor release'
+	@echo '  make release-micro      - Create micro release'
+	@echo '  make release-rc         - Create release candidate'
+	@echo '  make release-beta       - Create beta release'
+	@echo '  make release-alpha      - Create alpha release'
+	@echo '  make release-major-a    - Create major alpha release'
+	@echo '  make release-major-b    - Create major beta release'
+	@echo '  make release-major-rc   - Create major release candidate'
+	@echo '  make release-minor-a    - Create minor alpha release'
+	@echo '  make release-minor-b    - Create minor beta release'
+	@echo '  make release-minor-rc   - Create minor release candidate'
+	@echo '  make release-micro-a    - Create micro alpha release'
+	@echo '  make release-micro-b    - Create micro beta release'
+	@echo '  make release-micro-rc   - Create micro release candidate'
+	@echo '  make rollback           - Rollback last release'
 
 ######################
 # HELP
