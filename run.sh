@@ -589,97 +589,97 @@ function get:changes {
 function release:major {
     echo "Creating major release..."
     changes=$(get:changes)
-    python scripts/release.py create major --changes "$changes"
+    python3 scripts/release.py create major --changes "$changes"
 }
 
 function release:minor {
     echo "Creating minor release..."
     changes=$(get:changes)
-    python scripts/release.py create minor --changes "$changes"
+    python3 scripts/release.py create minor --changes "$changes"
 }
 
 function release:micro {
     echo "Creating micro release..."
     changes=$(get:changes)
-    python scripts/release.py create micro --changes "$changes"
+    python3 scripts/release.py create micro --changes "$changes"
 }
 
 function release:rc {
     echo "Creating release candidate..."
     changes=$(get:changes)
-    python scripts/release.py create micro --pre rc --changes "$changes"
+    python3 scripts/release.py create micro --pre rc --changes "$changes"
 }
 
 function release:beta {
     echo "Creating beta release..."
     changes=$(get:changes)
-    python scripts/release.py create micro --pre b --changes "$changes"
+    python3 scripts/release.py create micro --pre b --changes "$changes"
 }
 
 function release:alpha {
     echo "Creating alpha release..."
     changes=$(get:changes)
-    python scripts/release.py create micro --pre a --changes "$changes"
+    python3 scripts/release.py create micro --pre a --changes "$changes"
 }
 
 function release:major:a {
     echo "Creating major alpha release..."
     changes=$(get:changes)
-    python scripts/release.py create major --pre a --changes "$changes"
+    python3 scripts/release.py create major --pre a --changes "$changes"
 }
 
 function release:major:b {
     echo "Creating major beta release..."
     changes=$(get:changes)
-    python scripts/release.py create major --pre b --changes "$changes"
+    python3 scripts/release.py create major --pre b --changes "$changes"
 }
 
 function release:major:rc {
     echo "Creating major release candidate..."
     changes=$(get:changes)
-    python scripts/release.py create major --pre rc --changes "$changes"
+    python3 scripts/release.py create major --pre rc --changes "$changes"
 }
 
 function release:minor:a {
     echo "Creating minor alpha release..."
     changes=$(get:changes)
-    python scripts/release.py create minor --pre a --changes "$changes"
+    python3 scripts/release.py create minor --pre a --changes "$changes"
 }
 
 function release:minor:b {
     echo "Creating minor beta release..."
     changes=$(get:changes)
-    python scripts/release.py create minor --pre b --changes "$changes"
+    python3 scripts/release.py create minor --pre b --changes "$changes"
 }
 
 function release:minor:rc {
     echo "Creating minor release candidate..."
     changes=$(get:changes)
-    python scripts/release.py create minor --pre rc --changes "$changes"
+    python3 scripts/release.py create minor --pre rc --changes "$changes"
 }
 
 function release:micro:a {
     echo "Creating micro alpha release..."
     changes=$(get:changes)
-    python scripts/release.py create micro --pre a --changes "$changes"
+    python3 scripts/release.py create micro --pre a --changes "$changes"
 }
 
 function release:micro:b {
     echo "Creating micro beta release..."
     changes=$(get:changes)
-    python scripts/release.py create micro --pre b --changes "$changes"
+    python3 scripts/release.py create micro --pre b --changes "$changes"
 }
 
 function release:micro:rc {
     echo "Creating micro release candidate..."
     changes=$(get:changes)
-    python scripts/release.py create micro --pre rc --changes "$changes"
+    python3 scripts/release.py create micro --pre rc --changes "$changes"
 }
 
 # Rollback release
 function rollback {
     echo "Rolling back last release..."
-    python scripts/release.py rollback
+    python3 scripts/release.py rollback
 }
 
 # Helper function to show available release commands
