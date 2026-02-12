@@ -163,7 +163,7 @@ def generate_project(
         print_colored("Installing dependencies...", Colors.BLUE)
         try:
             if package_manager == "uv":
-                run_command(["uv", "sync"])
+                run_command(["uv", "sync", "--no-dev"])
             else:
                 run_command(["poetry", "install"], extra_env={"POETRY_VIRTUALENVS_IN_PROJECT": "true"})
         except subprocess.CalledProcessError:
