@@ -13,13 +13,13 @@ This documentation covers the {{ cookiecutter.project_name }} library.
 ## Installation
 
 ```bash
-pip install {{ cookiecutter.package_name }}
+pip install {{ cookiecutter.project_name }}
 ```
 
 Or, if you use UV:
 
 ```bash
-uv add {{ cookiecutter.package_name }}
+uv add {{ cookiecutter.project_name }}
 ```
 
 {% if cookiecutter.project_type == "application" %}
@@ -28,7 +28,7 @@ uv add {{ cookiecutter.package_name }}
 Run the application:
 
 ```bash
-{{ cookiecutter.package_name }}
+{{ cookiecutter.project_name }}
 ```
 
 Or run as a module:
@@ -44,7 +44,7 @@ python -m {{ cookiecutter.package_name }}
 ```bash
 pip install {{ cookiecutter.project_name }}
 
-{{ cookiecutter.package_name }}
+{{ cookiecutter.project_name }}
 ```
 {%- else -%}
 ```python
@@ -75,6 +75,6 @@ API Reference <api/index>
 :caption: Useful Links
 
 GitHub Repository <https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}>
-PyPI Package <https://pypi.org/project/{{ cookiecutter.package_name }}/>
+PyPI Package <https://pypi.org/project/{{ cookiecutter.project_name }}/>
 Issue Tracker <https://github.com/{{ cookiecutter.github_username }}/{{ cookiecutter.project_name }}/issues>
 ```
