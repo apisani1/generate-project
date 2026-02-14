@@ -8,6 +8,8 @@ from packaging.version import Version
 
 from scripts.release import PrereleaseType, ReleaseType, bump_version
 
+pytestmark = pytest.mark.manual
+
 BASE_VERSIONS = [
     "0.0.0",
     "0.0.1",

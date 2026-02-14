@@ -68,6 +68,8 @@ types-toml = "^0.10.8"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["manual: tests that only run when explicitly targeted"]
+addopts = "-m 'not manual'"
 
 [tool.poetry.group.lint]
 optional = true

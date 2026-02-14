@@ -356,7 +356,7 @@ function tests:file {
     FILE="$1"
     shift
     echo "Running tests from file $FILE..."
-    poetry run pytest "$FILE" "$@"
+    poetry run pytest "$FILE" -o "addopts=" "$@"
 }
 
 # Generate coverage report
