@@ -276,15 +276,43 @@ def bump_to_micro(current_version: Version, prerelease_type: Optional[Prerelease
 
 
 def bump_to_minor(current_version: Version, prerelease_type: Optional[PrereleaseType]) -> str:
-    major, minor, _ = get_stable_components(current_version)
-    prerelease_segment = f"{prerelease_type.value}1" if prerelease_type else ""
-    return f"{major}.{minor+1}.0{prerelease_segment}"
+    major, minor, micro = get_stable_components(current_version)
+    if current_version.pre is None:
+        # Not comming from a pre-release:
+        # - bump the minor component if not comming from dev
+        # - start a new pre-release sequence if requested
+        target_minor = minor + 1 if current_version.dev is None or micro != 0 else minor
+        prerelease_segment = f"{prerelease_type.value}1" if prerelease_type else ""
+        return f"{major}.{target_minor}.0{prerelease_segment}"
+    if prerelease_type is None:
+        # Finalize the current pre-release line to stable
+        return f"{major}.{minor}.{micro}"
+    # From pre-release to pre-relase request
+    if current_version.dev is not None:
+        # If comming from a dev release: ignore the dev and bump pre-release component
+        return bump_from_pre_to_pre(current_version, prerelease_type)
+    # Moved to minor base and start a new pre-release sequence
+    return f"{major}.{minor+1}.0{prerelease_type.value}1"
 
 
 def bump_to_major(current_version: Version, prerelease_type: Optional[PrereleaseType]) -> str:
     major, minor, micro = get_stable_components(current_version)
-    prerelease_segment = f"{prerelease_type.value}1" if prerelease_type else ""
-    return f"{major+1}.0.0{prerelease_segment}"
+    if current_version.pre is None:
+        # Not comming from a pre-release:
+        # - bump the major component if not comming from dev
+        # - start a new pre-release sequence if requested
+        target_major = major + 1 if current_version.dev is None or minor != 0 or micro != 0 else major
+        prerelease_segment = f"{prerelease_type.value}1" if prerelease_type else ""
+        return f"{target_major}.0.0{prerelease_segment}"
+    if prerelease_type is None:
+        # Finalize the current pre-release line to stable
+        return f"{major}.{minor}.{micro}"
+    # From pre-release to pre-relase request
+    if current_version.dev is not None:
+        # If comming from a dev release: ignore the dev and bump pre-release component
+        return bump_from_pre_to_pre(current_version, prerelease_type)
+    # Moved to major base and start a new pre-release sequence
+    return f"{major + 1}.0.0{prerelease_type.value}1"
 
 
 def bump_to_post(current_version: Version, prerelease_type: Optional[PrereleaseType]) -> str:
