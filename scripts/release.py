@@ -354,7 +354,6 @@ def bump_version(
     try:
         logger.info(f"Bumping from version {current_version} to {new_version}")
         return Version(new_version)
-
     except InvalidVersion:
         logger.error(
             f"Error bumping: {current_version}"
