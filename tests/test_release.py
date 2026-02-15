@@ -89,10 +89,10 @@ def test_bump_version_is_monotonic(
 
     if _expects_value_error(current_version, release_type, prerelease_type):
         with pytest.raises(ValueError):
-            bump_version(current_version, release_type, prerelease_type)
+            bump_version(current_version, release_type, prerelease_type, interactive=False)
         return
 
-    new_version = bump_version(current_version, release_type, prerelease_type)
+    new_version = bump_version(current_version, release_type, prerelease_type, interactive=False)
     assert isinstance(new_version, Version)
     assert new_version > current_version
 
@@ -215,5 +215,5 @@ def test_bump_version_expected_values(
     expected: str,
 ) -> None:
     """Verify exact output for key bump scenarios."""
-    result = bump_version(Version(current_text), release_type, prerelease_type)
+    result = bump_version(Version(current_text), release_type, prerelease_type, interactive=False)
     assert result == Version(expected), f"{current_text} + {release_type.value}({prerelease_type}) → {result}, expected {expected}"
