@@ -94,7 +94,7 @@ class RollbackState:
             return state
         except FileNotFoundError:
             logger.error("No saved release found.")
-            raise
+            raise FileNotFoundError("No saved release found.")
         except Exception as e:
             logger.error(f"Failed to load release state: {e}")
             raise RuntimeError(f"Failed to load release state: {e}")
@@ -505,7 +505,7 @@ def update_changelog(
 ) -> Optional[str]:
     """Update changelog file with changes since the last release."""
 
-    print(f"-Updating '{changelog_path}' to {new_version}.")
+    logger.info(f"Updating '{changelog_path}' to {new_version}.")
     try:
         changelog_entry = f"## [{new_version}] - {date}\n\n ### Changes\n"
         changelog_entry += changes + "\n\n"
@@ -639,7 +639,7 @@ def create_commit(
     commit_message = "\n".join(commit_msg)
     if interactive:
         commit_message = open_in_editor("commit message", commit_message, "txt")
-    print(f"-Creating release commit for version: {new_version}")
+    print(f"Creating release commit for version: {new_version}")
     logger.info("Staging changes...")
     subprocess.run(["git", "add", "."], check=True)
     logger.info("Committing changes...")
@@ -656,7 +656,7 @@ def create_tag(date: str, new_version: Version, changes: str, interactive: bool 
     tag_message = f"{tag} - {date}\n{changes.strip()}"
     if interactive:
         tag_message = open_in_editor("release note", tag_message, "txt")
-    print(f"-Creating release tag for version: {new_version}")
+    logger.info(f"Creating release tag for version: {new_version}")
     subprocess.run(["git", "tag", "-a", tag, "-m", tag_message], check=True)
 
 
