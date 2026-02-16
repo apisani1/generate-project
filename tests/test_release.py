@@ -1,14 +1,13 @@
 """Exhaustive bump_version matrix tests."""
 
+from datetime import datetime
 from itertools import product
 from typing import Optional
 
 import pytest
 from packaging.version import Version
 
-from scripts.release import PrereleaseType, ReleaseType, bump_version
-
-pytestmark = pytest.mark.manual
+from scripts.release import PrereleaseType, ReleaseType, RollbackState, bump_version
 
 BASE_VERSIONS = [
     "0.0.0",
@@ -78,6 +77,7 @@ def _expects_value_error(
     return False
 
 
+@pytest.mark.manual
 @pytest.mark.parametrize("current_text,release_type,prerelease_type", CASES)
 def test_bump_version_is_monotonic(
     current_text: str,
@@ -207,6 +207,7 @@ EXPECTED_VALUE_CASES = [
 # fmt: on
 
 
+@pytest.mark.manual
 @pytest.mark.parametrize("current_text,release_type,prerelease_type,expected", EXPECTED_VALUE_CASES)
 def test_bump_version_expected_values(
     current_text: str,
@@ -217,3 +218,81 @@ def test_bump_version_expected_values(
     """Verify exact output for key bump scenarios."""
     result = bump_version(Version(current_text), release_type, prerelease_type, interactive=False)
     assert result == Version(expected), f"{current_text} + {release_type.value}({prerelease_type}) → {result}, expected {expected}"
+
+
+# ── RollbackState unit tests ─────────────────────────────────────────────────
+
+
+class TestRollbackState:
+    """Tests for the RollbackState class."""
+
+    def _make_state(self, tmp_path):
+        """Create a RollbackState with PICKLE_FILE pointing to tmp_path."""
+        state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
+        state.PICKLE_FILE = str(tmp_path / "test_state.pkl")
+        return state
+
+    def test_init(self):
+        dt = datetime.now().astimezone()
+        version = Version("1.2.3")
+        state = RollbackState(dt, version)
+        assert state.start_dt == dt
+        assert state.current_version == version
+        assert state.files_backup == []
+
+    def test_add_to_backup(self):
+        state = RollbackState(datetime.now().astimezone(), Version("1.0.0"))
+        state.add_to_backup([("a.txt", "content_a")])
+        assert state.files_backup == [("a.txt", "content_a")]
+        state.add_to_backup([("b.txt", "content_b"), ("c.txt", "content_c")])
+        assert state.files_backup == [
+            ("a.txt", "content_a"),
+            ("b.txt", "content_b"),
+            ("c.txt", "content_c"),
+        ]
+
+    def test_save_and_load(self, tmp_path, monkeypatch):
+        state = self._make_state(tmp_path)
+        state.add_to_backup([("file.txt", "original")])
+        pickle_path = state.PICKLE_FILE
+        state.save()
+
+        monkeypatch.setattr(RollbackState, "PICKLE_FILE", pickle_path)
+        loaded = RollbackState.load()
+        assert loaded.current_version == state.current_version
+        assert loaded.start_dt == state.start_dt
+        assert loaded.files_backup == [("file.txt", "original")]
+
+    def test_load_file_not_found(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(RollbackState, "PICKLE_FILE", str(tmp_path / "missing.pkl"))
+        with pytest.raises(FileNotFoundError):
+            RollbackState.load()
+
+    def test_restore_files(self, tmp_path):
+        file_a = tmp_path / "a.txt"
+        file_b = tmp_path / "b.txt"
+        file_a.write_text("modified_a")
+        file_b.write_text("modified_b")
+
+        state = RollbackState(datetime.now().astimezone(), Version("1.0.0"))
+        state.files_backup = [(str(file_a), "original_a"), (str(file_b), "original_b")]
+        state.restore_files()
+
+        assert file_a.read_text() == "original_a"
+        assert file_b.read_text() == "original_b"
+
+    def test_restore_files_skips_missing(self, tmp_path):
+        state = RollbackState(datetime.now().astimezone(), Version("1.0.0"))
+        state.files_backup = [(str(tmp_path / "nonexistent.txt"), "content")]
+        state.restore_files()  # should not raise
+
+    def test_cleanup_removes_pickle(self, tmp_path):
+        state = self._make_state(tmp_path)
+        state.save()
+        assert (tmp_path / "test_state.pkl").exists()
+        state.cleanup()
+        assert not (tmp_path / "test_state.pkl").exists()
+
+    def test_cleanup_no_file(self, tmp_path):
+        state = self._make_state(tmp_path)
+        state.cleanup()  # should not raise

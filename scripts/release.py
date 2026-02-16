@@ -58,18 +58,59 @@ class PrereleaseType(Enum):
 
 PROJECT_FILE = "pyproject.toml"
 CHANGELOG_FILE = "CHANGELOG.md"
-BEFORE_LAST_RELEASE = ".before_last_release.pkl"
-
-files_backup: Optional[List[Tuple[str, str]]] = None
 
 
-def add_to_backup(entries: List[Tuple[str, str]]) -> None:
-    """Append file backup entries (path, original_content) to the global backup list."""
-    global files_backup
-    if files_backup is None:
-        files_backup = entries
-    else:
-        files_backup.extend(entries)
+class RollbackState:
+    """Encapsulates file backup state for release rollback."""
+
+    PICKLE_FILE = ".before_last_release.pkl"
+
+    def __init__(self, start_dt: datetime, current_version: Version) -> None:
+        self.start_dt = start_dt
+        self.current_version = current_version
+        self.files_backup: List[Tuple[str, str]] = []
+
+    def add_to_backup(self, entries: List[Tuple[str, str]]) -> None:
+        """Append file backup entries (path, original_content)."""
+        self.files_backup.extend(entries)
+
+    def save(self) -> None:
+        """Pickle state to disk for later rollback."""
+        try:
+            with open(self.PICKLE_FILE, "wb") as f:
+                pickle.dump(self, f)
+            logger.info("Release state saved successfully to allow for rollover.")
+        except Exception as e:
+            logger.error(f"Failed to save release state: {e}")
+            raise RuntimeError(f"Failed to save release state: {e}")
+
+    @classmethod
+    def load(cls) -> "RollbackState":
+        """Load previously saved state from disk."""
+        try:
+            with open(cls.PICKLE_FILE, "rb") as f:
+                state = pickle.load(f)
+            logger.info("Release state loaded successfully to allow for rollover.")
+            return state
+        except FileNotFoundError:
+            logger.error("No saved release found.")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to load release state: {e}")
+            raise RuntimeError(f"Failed to load release state: {e}")
+
+    def restore_files(self) -> None:
+        """Restore backed-up files to their original content."""
+        for file_path, original_content in self.files_backup:
+            file = Path(file_path)
+            if file.exists():
+                print(f"-Restoring {file_path}")
+                file.write_text(original_content)
+
+    def cleanup(self) -> None:
+        """Remove the pickle file after successful rollback."""
+        if os.path.exists(self.PICKLE_FILE):
+            os.remove(self.PICKLE_FILE)
 
 
 def create_release(
@@ -102,6 +143,7 @@ def create_release(
         ImportError: If tomllib or tomli is not available for reading TOML files.
     """
     time_stamp = datetime.now().astimezone()
+    state: Optional[RollbackState] = None
     try:
         # Ensure working directory is a git repository and is clean
         logger.info("Checking working directory git status...")
@@ -121,22 +163,23 @@ def create_release(
 
         date = time_stamp.strftime("%Y-%m-%d")
         current_version = get_current_version(project_file)
-        new_version = bump_version(current_version, release_type, prerelease_type, interactive=interactive)
-        update_version_files(project_file, new_version)
-        changelog_entry = update_changelog(changelog_file, date, new_version, changes_message, interactive=interactive)
-        commit_message = create_commit(new_version, changelog_entry, interactive=interactive)  # type: ignore
+        state = RollbackState(time_stamp, current_version)
+        new_version = bump_version(current_version, release_type, prerelease_type, interactive)
+        update_version_files(project_file, new_version, state)
+        changelog_entry = update_changelog(changelog_file, date, new_version, changes_message, state, interactive)
+        commit_message = create_commit(new_version, changelog_entry, interactive)  # type: ignore
         create_tag(date, new_version, commit_message, interactive=interactive)
-        save_state(time_stamp, current_version)
+        state.save()
 
         return new_version
 
     except subprocess.CalledProcessError as e:
         logger.error(f"Git or shell command failed ({e}). Rolling back changes.")
-        rollback(time_stamp)
+        rollback(state)
         raise RuntimeError(f"Git or shell command failed: {e}")
     except Exception as e:
         logger.error(f"Failed to create release: {e}. Rolling back changes.")
-        rollback(time_stamp)
+        rollback(state)
         raise
 
 
@@ -403,7 +446,7 @@ def bump_version(
         raise
 
 
-def update_version_files(project_file: str, new_version: Version) -> None:
+def update_version_files(project_file: str, new_version: Version, state: RollbackState) -> None:
     """Update version in all project files needed."""
 
     logger.info(f"Updating files with new version: {new_version}")
@@ -442,7 +485,7 @@ def update_version_files(project_file: str, new_version: Version) -> None:
             else:
                 logger.warning(f"'{version_key}' not found in '{file_path}', skipping.")
 
-    add_to_backup(list(zip(updated_files, original_contents)))
+    state.add_to_backup(list(zip(updated_files, original_contents)))
 
     if project_file not in updated_files:
         logger.error(f"Failed to update version in  '{project_file}'.")
@@ -450,7 +493,12 @@ def update_version_files(project_file: str, new_version: Version) -> None:
 
 
 def update_changelog(
-    changelog_path: str, date: str, new_version: Version, changes: str, interactive: bool = True
+    changelog_path: str,
+    date: str,
+    new_version: Version,
+    changes: str,
+    state: RollbackState,
+    interactive: bool = True,
 ) -> Optional[str]:
     """Update changelog file with changes since the last release."""
 
@@ -474,7 +522,7 @@ def update_changelog(
             new_content = f"# Changelog\n\n{changelog_entry}\n"
         changelog_file.write_text(new_content)
 
-        add_to_backup([(str(changelog_file), current_content)])
+        state.add_to_backup([(str(changelog_file), current_content)])
 
         return changelog_entry
 
@@ -495,6 +543,7 @@ def ask_user(message: str, choices: List[str], cancel: str = "Cancel") -> str:
             if 1 <= selected <= len(choices):
                 choice = choices[selected - 1]
                 if choice.lower() == cancel.lower():
+                    logger.error("Release cancelled by user.")
                     raise ValueError("Release cancelled by user.")
                 return choice
         print("Invalid choice. Please try again.")
@@ -608,40 +657,10 @@ def create_tag(date: str, new_version: Version, changes: str, interactive: bool 
     subprocess.run(["git", "tag", "-a", tag, "-m", tag_message], check=True)
 
 
-def save_state(start_dt: datetime, current_version: Version) -> None:
-    """Save the state to allow for rollover after release is succesful."""
-    global files_backup  # noqa: F824
-
-    try:
-        with open(BEFORE_LAST_RELEASE, "wb") as f:
-            pickle.dump((start_dt, current_version, files_backup), f)
-        logger.info("Release state saved successfully to allow for rolloever.")
-    except Exception as e:
-        logger.error(f"Failed to save release state: {e}")
-        raise RuntimeError(f"Failed to save release state: {e}")
-
-
-def load_state() -> Tuple[datetime, Version, Optional[List[Tuple[str, str]]]]:
-    """Load the state to allow for rollback after release is succesful."""
-    global files_backup  # noqa: F824
-
-    try:
-        with open(BEFORE_LAST_RELEASE, "rb") as f:
-            start_dt, current_version, files_backup = pickle.load(f)
-        logger.info("Release state loaded successfully to allow for rolloever.")
-        return start_dt, current_version, files_backup
-    except FileNotFoundError:
-        logger.warning("No saved release found.")
-        raise FileNotFoundError("No saved release found.")
-    except Exception as e:
-        logger.error(f"Failed to load release state: {e}")
-        raise RuntimeError(f"Failed to load release state: {e}")
-
-
-def rollback(start_dt: datetime) -> None:
+def rollback(state: Optional[RollbackState]) -> None:
     """Rollback changes if something goes wrong."""
-    global files_backup  # noqa: F824
-
+    if not state:
+        return
     logger.info("Rolling back changes...")
     try:
         # Check if last tag is after the script start
@@ -650,7 +669,7 @@ def rollback(start_dt: datetime) -> None:
             ["git", "log", "-1", "--format=%cd", "--date=iso-strict", last_tag], text=True
         ).strip()
         last_tag_commit_dt = datetime.fromisoformat(last_tag_commit_dt_str)
-        if last_tag_commit_dt > start_dt:
+        if last_tag_commit_dt > state.start_dt:
             # Delete the last tag
             print(f"-Deleting tag: {last_tag}")
             subprocess.run(["git", "tag", "-d", last_tag], check=True)
@@ -660,18 +679,13 @@ def rollback(start_dt: datetime) -> None:
             ["git", "log", "-1", "--format=%cd", "--date=iso-strict"], text=True
         ).strip()
         last_commit_dt = datetime.fromisoformat(last_commit_dt_str)
-        if last_commit_dt > start_dt:
+        if last_commit_dt > state.start_dt:
             # Reset to previous commit
             print("-Deleting last commit")
             subprocess.run(["git", "reset", "--hard", "HEAD~1"], check=True)
 
         # Restore version files from backup
-        if files_backup:
-            for file_path, original_content in files_backup:
-                file = Path(file_path)
-                if file.exists():
-                    print(f"-Restoring {file_path}")
-                    file.write_text(original_content)
+        state.restore_files()
 
         logger.info("Rollback complete")
 
@@ -681,8 +695,6 @@ def rollback(start_dt: datetime) -> None:
 
 
 def main() -> None:
-    global files_backup
-
     try:
         import argparse
 
@@ -694,7 +706,9 @@ def main() -> None:
         release_parser.add_argument("type", choices=[t.value for t in ReleaseType], help="Type of release")
         release_parser.add_argument("--pre", choices=[t.value for t in PrereleaseType], help="Type of pre-release")
         release_parser.add_argument("--changes", nargs=1, help="Changes for changelog")
-        release_parser.add_argument("--no-interactive", action="store_true", help="Disable interactive prompts (for CI)")
+        release_parser.add_argument(
+            "--no-interactive", action="store_true", help="Disable interactive prompts (for CI)"
+        )
 
         # Rollback command
         subparsers.add_parser("rollback", help="Rollback last release")
@@ -725,11 +739,10 @@ def main() -> None:
             if answer.lower() != "y":
                 print("Rollback cancelled.")
                 sys.exit(0)
-            start_dt, current_version, files_backup = load_state()
-            rollback(start_dt)
-            if os.path.exists(BEFORE_LAST_RELEASE):
-                os.remove(BEFORE_LAST_RELEASE)
-            print(f"Successfully rolled back to {current_version}")
+            state = RollbackState.load()
+            rollback(state)
+            state.cleanup()
+            print(f"Successfully rolled back to {state.current_version}")
             print("Please review the changes: CHANGLOG.md entry, version files, latest commit and latest tag.")
         else:
             parser.print_help()
