@@ -13,6 +13,7 @@ from itertools import chain
 from pathlib import Path
 from typing import (
     Iterator,
+    List,
     Optional,
     Tuple,
 )
@@ -70,6 +71,7 @@ def create_release(
     changes_message: Optional[str] = None,
     project_file: str = PROJECT_FILE,
     changelog_file: str = CHANGELOG_FILE,
+    interactive: bool = True,
 ) -> Version:
     """
     Create a new release, bumping version acording to release and pre-release type and updating project files
@@ -112,11 +114,11 @@ def create_release(
 
         date = time_stamp.strftime("%Y-%m-%d")
         current_version = get_current_version(project_file)
-        new_version = bump_version(current_version, release_type, prerelease_type)
+        new_version = bump_version(current_version, release_type, prerelease_type, interactive=interactive)
         update_version_files(project_file, new_version)
-        changelog_entry = update_changelog(changelog_file, date, new_version, changes_message)
-        commit_message = create_commit(new_version, changelog_entry)  # type: ignore
-        create_tag(date, new_version, commit_message)
+        changelog_entry = update_changelog(changelog_file, date, new_version, changes_message, interactive=interactive)
+        commit_message = create_commit(new_version, changelog_entry, interactive=interactive)  # type: ignore
+        create_tag(date, new_version, commit_message, interactive=interactive)
         save_state(time_stamp, current_version)
 
         return new_version
@@ -215,6 +217,7 @@ def bump_version(
     current_version: Version,
     release_type: ReleaseType,
     prerelease_type: Optional[PrereleaseType] = None,
+    interactive: bool = True,
 ) -> Version:
     """
     Bump a version according to semantic versioning rules.
@@ -246,7 +249,21 @@ def bump_version(
             current_pre_type, current_pre_num = current_version.pre
             return f"{major}.{minor}.{micro}{current_pre_type}{current_pre_num + 1}.dev1"
         # From stable or post: dev of next micro
+        component = choose_component_for_dev()
+        if component == "major":
+            return f"{major + 1}.0.0.dev1"
+        elif component == "minor":
+            return f"{major}.{minor + 1}.0.dev1"
         return f"{major}.{minor}.{micro + 1}.dev1"
+
+    def choose_component_for_dev() -> str:
+        """
+        Ask the user which component to bump for a dev release.
+        """
+        if not interactive:
+            return "micro"
+        message = "Which component would you like to bump for the dev release?"
+        return ask_user(message, ["Major", "Minor", "Micro", "Cancel"]).lower()
 
     def bump_to_pre() -> str:
         if current_version.pre is not None:
@@ -301,6 +318,7 @@ def bump_version(
             return f"{major}.{target_minor}.0{prerelease_segment}"
         if prerelease_type is None:
             # Finalize the current pre-release line to stable
+            confirm_finalize_from_prerelease(major, minor, micro)
             return f"{major}.{minor}.{micro}"
         # From pre-release to pre-relase request
         if current_version.dev is not None:
@@ -320,6 +338,7 @@ def bump_version(
             return f"{target_major}.0.0{prerelease_segment}"
         if prerelease_type is None:
             # Finalize the current pre-release line to stable
+            confirm_finalize_from_prerelease(major, minor, micro)
             return f"{major}.{minor}.{micro}"
         # From pre-release to pre-relase request
         if current_version.dev is not None:
@@ -327,6 +346,19 @@ def bump_version(
             return bump_from_pre_to_pre()
         # Moved to major base and start a new pre-release sequence
         return f"{major + 1}.0.0{prerelease_type.value}1"
+
+    def confirm_finalize_from_prerelease(major: int, minor: int, micro: int) -> None:
+        """
+        Confirm when bumping MINOR or MAJOR from a prerelease without specifying a new prerelease.
+        """
+        if not interactive:
+            return
+        message = (
+            f"Bumping {release_type.value} from prerelease {current_version} will finalize to "
+            f"{major}.{minor}.{micro} instead of incrementing the {release_type.value} component.\n"
+            "If you intended to increment, create an additional release with the same options"
+        )
+        ask_user(message, ["Continue", "Cancel"])
 
     def bump_to_post() -> str:
         if prerelease_type is not None:
@@ -359,6 +391,7 @@ def bump_version(
             f"Error bumping: {current_version}"
             f", release type: '{release_type.value}'"
             f", prerelease type: '{prerelease_type.value if prerelease_type else None}'"
+            f", new version: '{new_version}'"
         )
         raise
 
@@ -413,7 +446,9 @@ def update_version_files(project_file: str, new_version: Version) -> None:
         raise ValueError(f"Failed to update version in '{project_file}'.")
 
 
-def update_changelog(changelog_path: str, date: str, new_version: Version, changes: str) -> Optional[str]:
+def update_changelog(
+    changelog_path: str, date: str, new_version: Version, changes: str, interactive: bool = True
+) -> Optional[str]:
     """Update changelog file with changes since the last release."""
     global files_backup
 
@@ -421,7 +456,8 @@ def update_changelog(changelog_path: str, date: str, new_version: Version, chang
     try:
         changelog_entry = f"## [{new_version}] - {date}\n\n ### Changes\n"
         changelog_entry += changes + "\n\n"
-        changelog_entry = open_in_editor("changelog entry", changelog_entry, "md")
+        if interactive:
+            changelog_entry = open_in_editor("changelog entry", changelog_entry, "md")
         changelog_file = Path(changelog_path)
         if changelog_file.exists():
             current_content = changelog_file.read_text()
@@ -446,6 +482,23 @@ def update_changelog(changelog_path: str, date: str, new_version: Version, chang
     except Exception as e:
         logger.error(e)
         raise RuntimeError(f"Failed to update changelog: {e}")
+
+
+def ask_user(message: str, choices: List[str], cancel: str = "Cancel") -> str:
+    """Prompt user to choose an option and return the selected choice."""
+    print(message)
+    for index, choice in enumerate(choices, start=1):
+        print(f"{index}. {choice}")
+    while True:
+        answer = input(f"Select an option (1 - {len(choices)}): ").strip()
+        if answer.isdigit():
+            selected = int(answer)
+            if 1 <= selected <= len(choices):
+                choice = choices[selected - 1]
+                if choice.lower() == cancel.lower():
+                    raise ValueError("Release cancelled by user.")
+                return choice
+        print("Invalid choice. Please try again.")
 
 
 def open_in_editor(context: str, text: str, extension: str) -> str:
@@ -519,6 +572,7 @@ def analyze_version_for_commit(version: Version) -> Tuple[str, str, str]:
 def create_commit(
     new_version: Version,
     changes: str,
+    interactive: bool = True,
 ) -> str:
     """Create a commit with the changes."""
     # Determine commit message components from the version itself
@@ -532,7 +586,8 @@ def create_commit(
         _, changes = changes.split("Changes", 1)
     commit_msg.append(changes.strip())
     commit_message = "\n".join(commit_msg)
-    commit_message = open_in_editor("commit message", commit_message, "txt")
+    if interactive:
+        commit_message = open_in_editor("commit message", commit_message, "txt")
     print(f"-Creating release commit for version: {new_version}")
     logger.info("Staging changes...")
     subprocess.run(["git", "add", "."], check=True)
@@ -541,14 +596,15 @@ def create_commit(
     return commit_message
 
 
-def create_tag(date: str, new_version: Version, changes: str) -> None:
+def create_tag(date: str, new_version: Version, changes: str, interactive: bool = True) -> None:
     """Create a tag for the release."""
     tag = f"v{new_version}"
     logger.info(f"Creating tag: {tag}")
     if "Changes" in changes:
         _, changes = changes.split("Changes", 1)
-    changes = f"{tag} - {date}\n{changes.strip()}"
-    tag_message = open_in_editor("release note", changes, "txt")
+    tag_message = f"{tag} - {date}\n{changes.strip()}"
+    if interactive:
+        tag_message = open_in_editor("release note", tag_message, "txt")
     print(f"-Creating release tag for version: {new_version}")
     subprocess.run(["git", "tag", "-a", tag, "-m", tag_message], check=True)
 
@@ -639,6 +695,7 @@ def main() -> None:
         release_parser.add_argument("type", choices=[t.value for t in ReleaseType], help="Type of release")
         release_parser.add_argument("--pre", choices=[t.value for t in PrereleaseType], help="Type of pre-release")
         release_parser.add_argument("--changes", nargs=1, help="Changes for changelog")
+        release_parser.add_argument("--no-interactive", action="store_true", help="Disable interactive prompts (for CI)")
 
         # Rollback command
         subparsers.add_parser("rollback", help="Rollback last release")
@@ -656,6 +713,7 @@ def main() -> None:
                 ReleaseType(args.type),
                 PrereleaseType(args.pre) if args.pre else None,
                 changes_message=args.changes[0] if args.changes else None,
+                interactive=not args.no_interactive,
             )
             print(f"Successfully created release {new_version}")
             print("To complete the release:")
