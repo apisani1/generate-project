@@ -9,10 +9,8 @@ import sys
 import tempfile
 from datetime import datetime
 from enum import Enum
-from itertools import chain
 from pathlib import Path
 from typing import (
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -62,7 +60,16 @@ PROJECT_FILE = "pyproject.toml"
 CHANGELOG_FILE = "CHANGELOG.md"
 BEFORE_LAST_RELEASE = ".before_last_release.pkl"
 
-files_backup: Optional[Iterator[Tuple[str, str]]] = None
+files_backup: Optional[List[Tuple[str, str]]] = None
+
+
+def add_to_backup(entries: List[Tuple[str, str]]) -> None:
+    """Append file backup entries (path, original_content) to the global backup list."""
+    global files_backup
+    if files_backup is None:
+        files_backup = entries
+    else:
+        files_backup.extend(entries)
 
 
 def create_release(
@@ -398,7 +405,6 @@ def bump_version(
 
 def update_version_files(project_file: str, new_version: Version) -> None:
     """Update version in all project files needed."""
-    global files_backup
 
     logger.info(f"Updating files with new version: {new_version}")
     updated_files = []
@@ -436,10 +442,7 @@ def update_version_files(project_file: str, new_version: Version) -> None:
             else:
                 logger.warning(f"'{version_key}' not found in '{file_path}', skipping.")
 
-    if files_backup:
-        files_backup = chain(files_backup, zip(updated_files, original_contents))
-    else:
-        files_backup = zip(updated_files, original_contents)
+    add_to_backup(list(zip(updated_files, original_contents)))
 
     if project_file not in updated_files:
         logger.error(f"Failed to update version in  '{project_file}'.")
@@ -450,7 +453,6 @@ def update_changelog(
     changelog_path: str, date: str, new_version: Version, changes: str, interactive: bool = True
 ) -> Optional[str]:
     """Update changelog file with changes since the last release."""
-    global files_backup
 
     print(f"-Updating '{changelog_path}' to {new_version}.")
     try:
@@ -472,10 +474,7 @@ def update_changelog(
             new_content = f"# Changelog\n\n{changelog_entry}\n"
         changelog_file.write_text(new_content)
 
-        if files_backup:
-            files_backup = chain(files_backup, zip([str(changelog_file)], [current_content]))
-        else:
-            files_backup = zip([str(changelog_file)], [current_content])
+        add_to_backup([(str(changelog_file), current_content)])
 
         return changelog_entry
 
@@ -622,7 +621,7 @@ def save_state(start_dt: datetime, current_version: Version) -> None:
         raise RuntimeError(f"Failed to save release state: {e}")
 
 
-def load_state() -> Tuple[datetime, Version, Optional[Iterator[Tuple[str, str]]]]:
+def load_state() -> Tuple[datetime, Version, Optional[List[Tuple[str, str]]]]:
     """Load the state to allow for rollback after release is succesful."""
     global files_backup  # noqa: F824
 
