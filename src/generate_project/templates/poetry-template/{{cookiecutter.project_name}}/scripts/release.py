@@ -249,6 +249,7 @@ def read_from_toml_file(file_path: str, section: str, key: str) -> Optional[str]
             # Poetry format: read from tool section
             value = toml_data.get("tool", {}).get(section, {}).get(key)
         if not value:
+            print(f"Warning: '{key}' field of section '{section}' not found in '{file_path}'.")
             logger.warning(f"'{key}' field of section '{section}' not found in '{file_path}'.")
         return value
     except Exception as e:
@@ -459,6 +460,7 @@ def update_version_files(project_file: str, new_version: Version, state: Rollbac
             print(f"-Updating '{version_key}' to {new_version} in '{file_path}'.")
             file = Path(file_path)
             if not file.exists():
+                print(f"Warning: '{file_path}' does not exist, skipping.")
                 logger.warning(f"'{file_path}' does not exist, skipping.")
                 continue
             content = file.read_text()
@@ -483,6 +485,7 @@ def update_version_files(project_file: str, new_version: Version, state: Rollbac
                 original_contents.append(content)
                 logger.info(f"Updated '{file_path}' to version {new_version}.")
             else:
+                print(f"Warning: '{version_key}' not found in '{file_path}', skipping.")
                 logger.warning(f"'{version_key}' not found in '{file_path}', skipping.")
 
     state.add_to_backup(list(zip(updated_files, original_contents)))
@@ -687,7 +690,7 @@ def rollback(state: Optional[RollbackState]) -> None:
         # Restore version files from backup
         state.restore_files()
 
-        logger.info("Rollback complete")
+        logger.info("Rollback completed")
 
     except subprocess.CalledProcessError as e:
         logger.error(f"Error during rollback: {e}")
@@ -699,7 +702,14 @@ def main() -> None:
         import argparse
 
         parent_parser = argparse.ArgumentParser(add_help=False)
-        parent_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+        parent_parser.add_argument(
+            "--log", "-l",
+            nargs="?",
+            const="",
+            default=None,
+            metavar="FILE",
+            help="Enable logging (optionally to FILE)",
+        )
 
         parser = argparse.ArgumentParser(description="Manage releases")
         subparsers = parser.add_subparsers(dest="command", help="Command to execute")
@@ -718,8 +728,19 @@ def main() -> None:
 
         args = parser.parse_args()
 
-        # Set verbose logging level if requested
-        logger.setLevel(logging.INFO if args.verbose else logging.WARNING)
+        if not args.command:
+            parser.print_help()
+            sys.exit(0)
+
+        # Reconfigure logging based on CLI flags
+        if args.log is not None:
+            root = logging.getLogger()
+            root.setLevel(logging.INFO)
+            for h in root.handlers:
+                root.removeHandler(h)
+            handler = logging.FileHandler(args.log) if args.log else logging.StreamHandler(sys.stdout)
+            handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+            root.addHandler(handler)
 
         if args.command == "create":
             new_version = create_release(
@@ -744,8 +765,6 @@ def main() -> None:
             state.cleanup()
             print(f"Successfully rolled back to {state.current_version}")
             print("Please review the changes: CHANGLOG.md entry, version files, latest commit and latest tag.")
-        else:
-            parser.print_help()
 
     except Exception as e:
         print(f"Error: {e}")
