@@ -116,9 +116,9 @@ def create_release(
         current_version = get_current_version(project_file)
         new_version = bump_version(current_version, release_type, prerelease_type, interactive=interactive)
         update_version_files(project_file, new_version)
-        changelog_entry = update_changelog(changelog_file, date, new_version, changes_message)
-        commit_message = create_commit(new_version, changelog_entry)  # type: ignore
-        create_tag(date, new_version, commit_message)
+        changelog_entry = update_changelog(changelog_file, date, new_version, changes_message, interactive=interactive)
+        commit_message = create_commit(new_version, changelog_entry, interactive=interactive)  # type: ignore
+        create_tag(date, new_version, commit_message, interactive=interactive)
         save_state(time_stamp, current_version)
 
         return new_version
@@ -446,7 +446,9 @@ def update_version_files(project_file: str, new_version: Version) -> None:
         raise ValueError(f"Failed to update version in '{project_file}'.")
 
 
-def update_changelog(changelog_path: str, date: str, new_version: Version, changes: str) -> Optional[str]:
+def update_changelog(
+    changelog_path: str, date: str, new_version: Version, changes: str, interactive: bool = True
+) -> Optional[str]:
     """Update changelog file with changes since the last release."""
     global files_backup
 
@@ -454,7 +456,8 @@ def update_changelog(changelog_path: str, date: str, new_version: Version, chang
     try:
         changelog_entry = f"## [{new_version}] - {date}\n\n ### Changes\n"
         changelog_entry += changes + "\n\n"
-        changelog_entry = open_in_editor("changelog entry", changelog_entry, "md")
+        if interactive:
+            changelog_entry = open_in_editor("changelog entry", changelog_entry, "md")
         changelog_file = Path(changelog_path)
         if changelog_file.exists():
             current_content = changelog_file.read_text()
@@ -569,6 +572,7 @@ def analyze_version_for_commit(version: Version) -> Tuple[str, str, str]:
 def create_commit(
     new_version: Version,
     changes: str,
+    interactive: bool = True,
 ) -> str:
     """Create a commit with the changes."""
     # Determine commit message components from the version itself
@@ -582,7 +586,8 @@ def create_commit(
         _, changes = changes.split("Changes", 1)
     commit_msg.append(changes.strip())
     commit_message = "\n".join(commit_msg)
-    commit_message = open_in_editor("commit message", commit_message, "txt")
+    if interactive:
+        commit_message = open_in_editor("commit message", commit_message, "txt")
     print(f"-Creating release commit for version: {new_version}")
     logger.info("Staging changes...")
     subprocess.run(["git", "add", "."], check=True)
@@ -591,14 +596,15 @@ def create_commit(
     return commit_message
 
 
-def create_tag(date: str, new_version: Version, changes: str) -> None:
+def create_tag(date: str, new_version: Version, changes: str, interactive: bool = True) -> None:
     """Create a tag for the release."""
     tag = f"v{new_version}"
     logger.info(f"Creating tag: {tag}")
     if "Changes" in changes:
         _, changes = changes.split("Changes", 1)
-    changes = f"{tag} - {date}\n{changes.strip()}"
-    tag_message = open_in_editor("release note", changes, "txt")
+    tag_message = f"{tag} - {date}\n{changes.strip()}"
+    if interactive:
+        tag_message = open_in_editor("release note", tag_message, "txt")
     print(f"-Creating release tag for version: {new_version}")
     subprocess.run(["git", "tag", "-a", tag, "-m", tag_message], check=True)
 
