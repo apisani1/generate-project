@@ -639,7 +639,7 @@ def create_commit(
     commit_message = "\n".join(commit_msg)
     if interactive:
         commit_message = open_in_editor("commit message", commit_message, "txt")
-    print(f"Creating release commit for version: {new_version}")
+    print(f"-Creating release commit for version: {new_version}")
     logger.info("Staging changes...")
     subprocess.run(["git", "add", "."], check=True)
     logger.info("Committing changes...")
