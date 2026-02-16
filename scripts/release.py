@@ -698,11 +698,14 @@ def main() -> None:
     try:
         import argparse
 
+        parent_parser = argparse.ArgumentParser(add_help=False)
+        parent_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+
         parser = argparse.ArgumentParser(description="Manage releases")
         subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
         # Create release command
-        release_parser = subparsers.add_parser("create", help="Create a new release")
+        release_parser = subparsers.add_parser("create", parents=[parent_parser], help="Create a new release")
         release_parser.add_argument("type", choices=[t.value for t in ReleaseType], help="Type of release")
         release_parser.add_argument("--pre", choices=[t.value for t in PrereleaseType], help="Type of pre-release")
         release_parser.add_argument("--changes", nargs=1, help="Changes for changelog")
@@ -711,10 +714,7 @@ def main() -> None:
         )
 
         # Rollback command
-        subparsers.add_parser("rollback", help="Rollback last release")
-
-        # Logging verbose option for both commands
-        parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+        subparsers.add_parser("rollback", parents=[parent_parser], help="Rollback last release")
 
         args = parser.parse_args()
 
