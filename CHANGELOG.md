@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.3.0rc1] - 2026-02-17
+
+## Release Candidate v1.3.0 - UV Package Manager Support and Release Script Improvements
+
+### New Features
+- ✨ Add UV template and `--manager` flag for package manager selection (Poetry or UV)
+- ✨ Add interactive prompts and `--no-interactive` flag to release script
+- ✨ Replace `--verbose` with `--log` flag in release script
+- ✨ Add pre-release combination targets for all stable levels
+
+### Bug Fixes
+- 🐛 Fix pre-release bump when finalizing from dev release (PEP 440 compliance)
+- 🐛 Fix shell quoting, env cleanup, and Python 3.10 compat in `run.sh`
+- 🐛 Remove invalid caret prefix from `python-version` in CI workflows
+- 🐛 Fix `project_name` for CLI entry point and pip install in templates
+- 🐛 Check all file conflicts before moving generated project files
+- 🐛 Only install core deps during UV project generation
+- 🐛 Handle missing `tomli` gracefully in `update_versions.py`
+- 🐛 Improve venv/conda handling and add `venv-clean` target
+- 🐛 Compare against HEAD in `get:python:files:diff`
+
+### Refactoring
+- ♻️ Encapsulate rollback state in `RollbackState` class
+- ♻️ Extract and nest `bump_version` into dedicated helper closures
+- ♻️ Replace print calls with logger and improve error messages
+- ♻️ Thread interactive flag through changelog, commit, and tag functions
+- ♻️ Remove duplicate metadata from `[tool.poetry]` sections
+
+### CI/CD
+- 🚀 Add retry logic to ReadTheDocs API activation step
+- 🚀 Use tool-agnostic token env vars and strict publish in release workflows
+
+### Tests
+- ✅ Add exhaustive `bump_version` matrix tests (2005 parametrized cases)
+- ✅ Add expected-value regression tests for key bump scenarios
+
+### Documentation
+- 📝 Update documentation for UV support and fix stale `python_version` references
+- 📝 Use `project_name` for distribution references in template docs
+
+
 ## [1.2.1] - 2026-02-08
 
 # Release v1.2.1 - Config and Generate Command Fixes
