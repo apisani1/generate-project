@@ -322,8 +322,9 @@ def bump_version(
         major, minor, micro = get_stable_components(current_version)
         current_pre_type, current_pre_num = current_version.pre  # type: ignore
         if prerelease_type is None or prerelease_type == PrereleaseType(current_pre_type):
-            # Same type of pre-release: bump the current pre-release number
-            return f"{major}.{minor}.{micro}{current_pre_type}{current_pre_num + 1}"
+            # Same type of pre-release: bump the current pre-release number if not comming from dev
+            target_pre = current_pre_num + 1 if current_version.dev is None else current_pre_num
+            return f"{major}.{minor}.{micro}{current_pre_type}{target_pre}"
         pre_hierarchy = {"a": 1, "b": 2, "rc": 3}
         if pre_hierarchy.get(prerelease_type.value, 0) > pre_hierarchy.get(current_pre_type, 0):
             # Higher type of pre-release: start a new pre-release sequence
@@ -342,9 +343,9 @@ def bump_version(
         if prerelease_type is None:
             # Finalize the current pre-release line to stable
             return f"{major}.{minor}.{micro}"
-        # From pre-release to pre-relase request
+        # From pre-release to pre-release request
         if current_version.dev is not None:
-            # If comming from a dev release: ignore the dev and bump pre-release component
+            # If comming from a dev release: drop the dev or move to higher type of pre-release
             return bump_from_pre_to_pre()
         # Moved to next micro base and start a new pre-release sequence
         return f"{major}.{minor}.{micro+1}{prerelease_type.value}1"
@@ -364,9 +365,9 @@ def bump_version(
             return f"{major}.{minor}.{micro}"
         # From pre-release to pre-relase request
         if current_version.dev is not None:
-            # If comming from a dev release: ignore the dev and bump pre-release component
+            # If comming from a dev release: drop the dev or move to higher type of pre-release
             return bump_from_pre_to_pre()
-        # Moved to minor base and start a new pre-release sequence
+        # Moved to the next minor base and start a new pre-release sequence
         return f"{major}.{minor+1}.0{prerelease_type.value}1"
 
     def bump_to_major() -> str:
@@ -384,9 +385,9 @@ def bump_version(
             return f"{major}.{minor}.{micro}"
         # From pre-release to pre-relase request
         if current_version.dev is not None:
-            # If comming from a dev release: ignore the dev and bump pre-release component
+            # If comming from a dev release: drop the dev or move to higher type of pre-release
             return bump_from_pre_to_pre()
-        # Moved to major base and start a new pre-release sequence
+        # Moved to the next major base and start a new pre-release sequence
         return f"{major + 1}.0.0{prerelease_type.value}1"
 
     def confirm_finalize_from_prerelease(major: int, minor: int, micro: int) -> None:

@@ -115,7 +115,7 @@ EXPECTED_VALUE_CASES = [
     ("1.2.4a3",        ReleaseType.MICRO, None,               "1.2.4"),
     ("1.2.4rc1.dev1",  ReleaseType.MICRO, None,               "1.2.4"),
     # From pre+dev with prerelease_type → bump_from_pre_to_pre
-    ("1.2.4rc1.dev1",  ReleaseType.MICRO, PrereleaseType.RC,  "1.2.4rc2"),
+    ("1.2.4rc1.dev1",  ReleaseType.MICRO, PrereleaseType.RC,  "1.2.4rc1"),
     ("1.2.4a1.dev1",   ReleaseType.MICRO, PrereleaseType.RC,  "1.2.4rc1"),
     # From pre (no dev) with prerelease_type → next micro base
     ("1.2.4rc1",       ReleaseType.MICRO, PrereleaseType.RC,  "1.2.5rc1"),
@@ -134,7 +134,7 @@ EXPECTED_VALUE_CASES = [
     ("1.3.0rc1",       ReleaseType.MINOR, None,               "1.3.0"),
     ("1.2.4rc1",       ReleaseType.MINOR, None,               "1.2.4"),
     # From pre+dev → bump_from_pre_to_pre
-    ("1.3.0rc1.dev1",  ReleaseType.MINOR, PrereleaseType.RC,  "1.3.0rc2"),
+    ("1.3.0rc1.dev1",  ReleaseType.MINOR, PrereleaseType.RC,  "1.3.0rc1"),
     # From pre (no dev) → next minor base
     ("1.3.0rc1",       ReleaseType.MINOR, PrereleaseType.RC,  "1.4.0rc1"),
 
@@ -152,7 +152,7 @@ EXPECTED_VALUE_CASES = [
     # Finalize pre-release to stable
     ("2.0.0rc1",       ReleaseType.MAJOR, None,               "2.0.0"),
     # From pre+dev → bump_from_pre_to_pre
-    ("2.0.0rc1.dev1",  ReleaseType.MAJOR, PrereleaseType.RC,  "2.0.0rc2"),
+    ("2.0.0rc1.dev1",  ReleaseType.MAJOR, PrereleaseType.RC,  "2.0.0rc1"),
     # From pre (no dev) → next major base
     ("2.0.0rc1",       ReleaseType.MAJOR, PrereleaseType.RC,  "3.0.0rc1"),
 
@@ -171,9 +171,9 @@ EXPECTED_VALUE_CASES = [
     ("1.2.4a1",        ReleaseType.PRE,   PrereleaseType.RC,  "1.2.4rc1"),
     ("1.2.4a1",        ReleaseType.PRE,   PrereleaseType.BETA, "1.2.4b1"),
     ("1.2.4b1",        ReleaseType.PRE,   PrereleaseType.RC,  "1.2.4rc1"),
-    # pre+dev → strips dev, bumps pre
-    ("1.2.4rc1.dev1",  ReleaseType.PRE,   PrereleaseType.RC,  "1.2.4rc2"),
-    ("1.2.4rc1.dev1",  ReleaseType.PRE,   None,               "1.2.4rc2"),
+    # pre+dev → strips dev, finalizes pre
+    ("1.2.4rc1.dev1",  ReleaseType.PRE,   PrereleaseType.RC,  "1.2.4rc1"),
+    ("1.2.4rc1.dev1",  ReleaseType.PRE,   None,               "1.2.4rc1"),
 
     # ── DEV ──────────────────────────────────────────────────────────────────
     # From stable → next micro dev
