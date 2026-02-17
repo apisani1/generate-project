@@ -80,9 +80,8 @@ class RollbackState:
             with open(self.PICKLE_FILE, "wb") as f:
                 pickle.dump(self, f)
             logger.info("Release state saved successfully to allow for rollover.")
-        except Exception as e:
-            logger.error(f"Failed to save release state: {e}")
-            raise RuntimeError(f"Failed to save release state: {e}")
+        except OSError as e:
+            raise RuntimeError(f"Failed to save release state: {e}") from e
 
     @classmethod
     def load(cls) -> "RollbackState":
@@ -93,11 +92,9 @@ class RollbackState:
             logger.info("Release state loaded successfully to allow for rollover.")
             return state
         except FileNotFoundError:
-            logger.error("No saved release found.")
-            raise FileNotFoundError("No saved release found.")
-        except Exception as e:
-            logger.error(f"Failed to load release state: {e}")
-            raise RuntimeError(f"Failed to load release state: {e}")
+            raise
+        except (OSError, pickle.UnpicklingError) as e:
+            raise RuntimeError(f"Failed to load release state: {e}") from e
 
     def restore_files(self) -> None:
         """Restore backed-up files to their original content."""
@@ -149,14 +146,12 @@ def create_release(
         logger.info("Checking working directory git status...")
         result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, check=True)
         if result.stdout.strip():
-            logger.error("Not a git repository or working directory is not clean.")
             raise ValueError("Not a git repository or working directory is not clean.")
 
         # Verify that there are changes since the last release
         latest_tag = get_latest_release_tag()
         commit_messages = get_commits_since_tag(latest_tag)
         if not commit_messages:
-            logger.error("No new commits since last release.")
             raise ValueError("No new commits since last release.")
         if not changes_message:
             changes_message = "\n".join(f"- {msg}" for msg in commit_messages)
@@ -176,7 +171,7 @@ def create_release(
     except subprocess.CalledProcessError as e:
         logger.error(f"Git or shell command failed ({e}). Rolling back changes.")
         rollback(state)
-        raise RuntimeError(f"Git or shell command failed: {e}")
+        raise RuntimeError(f"Git or shell command failed: {e}") from e
     except Exception as e:
         logger.error(f"Failed to create release: {e}. Rolling back changes.")
         rollback(state)
@@ -212,15 +207,13 @@ def get_current_version(project_file: str) -> Version:
         version_text = read_from_toml_file(project_file, "poetry", "version")
 
     if not version_text:
-        logger.error(f"Could not find version in '{project_file}'. Please check the file format.")
         raise ValueError(f"Version not found in '{project_file}'. Please check the file format.")
     try:
         version = Version(version_text)
         logger.info(f"Current version found in '{project_file}': '{version}'")
         return version
-    except InvalidVersion:
-        logger.error(f"Invalid version found in '{project_file}': '{version_text}'")
-        raise ValueError(f"Invalid version format in '{project_file}': '{version_text}'")
+    except InvalidVersion as e:
+        raise ValueError(f"Invalid version format in '{project_file}': '{version_text}'") from e
 
 
 def read_from_toml_file(file_path: str, section: str, key: str) -> Optional[str]:
@@ -231,12 +224,10 @@ def read_from_toml_file(file_path: str, section: str, key: str) -> Optional[str]
         try:
             import tomli as tomllib  # For Python < 3.11
         except ImportError:
-            logger.error("Neither tomllib nor tomli is available. Please install tomli package.")
             raise ImportError("Please install tomli package: pip install tomli")
 
     toml_file = Path(file_path)
     if not toml_file.exists():
-        logger.error(f"'{file_path}' does not exist.")
         raise FileNotFoundError(f"'{file_path}' does not exist.")
     try:
         with open(toml_file, "rb") as f:
@@ -250,7 +241,6 @@ def read_from_toml_file(file_path: str, section: str, key: str) -> Optional[str]
             value = toml_data.get("tool", {}).get(section, {}).get(key)
         if not value:
             print(f"Warning: '{key}' field of section '{section}' not found in '{file_path}'.")
-            logger.warning(f"'{key}' field of section '{section}' not found in '{file_path}'.")
         return value
     except Exception as e:
         logger.error(f"Error reading '{key}' field of section 'tool.{section}' from {file_path}: {e}")
@@ -461,7 +451,6 @@ def update_version_files(project_file: str, new_version: Version, state: Rollbac
             file = Path(file_path)
             if not file.exists():
                 print(f"Warning: '{file_path}' does not exist, skipping.")
-                logger.warning(f"'{file_path}' does not exist, skipping.")
                 continue
             content = file.read_text()
             # Build pattern with capturing groups to preserve format
@@ -486,12 +475,10 @@ def update_version_files(project_file: str, new_version: Version, state: Rollbac
                 logger.info(f"Updated '{file_path}' to version {new_version}.")
             else:
                 print(f"Warning: '{version_key}' not found in '{file_path}', skipping.")
-                logger.warning(f"'{version_key}' not found in '{file_path}', skipping.")
 
     state.add_to_backup(list(zip(updated_files, original_contents)))
 
     if project_file not in updated_files:
-        logger.error(f"Failed to update version in  '{project_file}'.")
         raise ValueError(f"Failed to update version in '{project_file}'.")
 
 
@@ -529,9 +516,8 @@ def update_changelog(
 
         return changelog_entry
 
-    except Exception as e:
-        logger.error(e)
-        raise RuntimeError(f"Failed to update changelog: {e}")
+    except OSError as e:
+        raise RuntimeError(f"Failed to update changelog: {e}") from e
 
 
 def ask_user(message: str, choices: List[str], cancel: str = "Cancel") -> str:
@@ -546,7 +532,6 @@ def ask_user(message: str, choices: List[str], cancel: str = "Cancel") -> str:
             if 1 <= selected <= len(choices):
                 choice = choices[selected - 1]
                 if choice.lower() == cancel.lower():
-                    logger.error("Release cancelled by user.")
                     raise ValueError("Release cancelled by user.")
                 return choice
         print("Invalid choice. Please try again.")
@@ -660,10 +645,10 @@ def create_tag(date: str, new_version: Version, changes: str, interactive: bool 
     subprocess.run(["git", "tag", "-a", tag, "-m", tag_message], check=True)
 
 
-def rollback(state: Optional[RollbackState]) -> None:
-    """Rollback changes if something goes wrong."""
+def rollback(state: Optional[RollbackState]) -> bool:
+    """Rollback changes if something goes wrong. Returns True on success, False on failure."""
     if not state:
-        return
+        return True
     logger.info("Rolling back changes...")
     try:
         # Check if last tag is after the script start
@@ -691,10 +676,14 @@ def rollback(state: Optional[RollbackState]) -> None:
         state.restore_files()
 
         logger.info("Rollback completed")
+        return True
 
     except subprocess.CalledProcessError as e:
+        # Intentionally swallowed: rollback runs inside an exception handler,
+        # so re-raising here would mask the original error.
         logger.error(f"Error during rollback: {e}")
         logger.error("Manual intervention may be required")
+        return False
 
 
 def main() -> None:
@@ -761,12 +750,16 @@ def main() -> None:
                 print("Rollback cancelled.")
                 sys.exit(0)
             state = RollbackState.load()
-            rollback(state)
+            success = rollback(state)
             state.cleanup()
-            print(f"Successfully rolled back to {state.current_version}")
+            if success:
+                print(f"Successfully rolled back to {state.current_version}")
+            else:
+                print(f"Warning: Rollback to {state.current_version} was only partial. Manual intervention may be required.")
             print("Please review the changes: CHANGLOG.md entry, version files, latest commit and latest tag.")
 
     except Exception as e:
+        logger.error(f"Error: {e}", exc_info=True)
         print(f"Error: {e}")
         sys.exit(1)
 
