@@ -289,7 +289,7 @@ def bump_version(
             # From pre-release: dev1 of next pre-release number
             current_pre_type, current_pre_num = current_version.pre
             return f"{major}.{minor}.{micro}{current_pre_type}{current_pre_num + 1}.dev1"
-        # From stable or post: dev of next micro
+        # From stable or post: dev of next component
         component = choose_component_for_dev()
         if component == "major":
             return f"{major + 1}.0.0.dev1"
@@ -302,6 +302,7 @@ def bump_version(
         Ask the user which component to bump for a dev release.
         """
         if not interactive:
+            logger.info("Non-interactive mode: automatically choosing 'micro' for dev release.")
             return "micro"
         message = "Which component would you like to bump for the dev release?"
         return ask_user(message, ["Major", "Minor", "Micro", "Cancel"]).lower()
@@ -393,6 +394,7 @@ def bump_version(
         Confirm when bumping MINOR or MAJOR from a prerelease without specifying a new prerelease.
         """
         if not interactive:
+            logger.info("Non-interactive mode: automatically finalizing prerelease.")
             return
         message = (
             f"Bumping {release_type.value} from prerelease {current_version} will finalize to "
