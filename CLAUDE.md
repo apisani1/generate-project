@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-This project uses a combination of Poetry for dependency management and a custom `run.sh` script for development tasks. All commands can be executed via either the Makefile (which delegates to `run.sh`) or directly via `run.sh`.
+This project uses UV for dependency management and a custom `run.sh` script for development tasks. All commands can be executed via either the Makefile (which delegates to `run.sh`) or directly via `run.sh`.
 
 ### Environment Setup
 ```bash
@@ -48,7 +48,7 @@ make docs-clean           # Clean and rebuild documentation
 
 ### Package Building
 ```bash
-make build                # Build package with Poetry
+make build                # Build package with UV
 make validate-build       # Validate package builds correctly
 make clean                # Clean build artifacts
 ```
@@ -79,15 +79,15 @@ This is a Python project generator tool that creates well-structured Python proj
 
 ### Key Features
 
-1. **Project Generation**: Creates complete Python project structure with Poetry or UV, testing, linting, documentation, and CI/CD
-5. **Package Manager Selection**: Choose between Poetry (default) and UV via `--manager` flag
+1. **Project Generation**: Creates complete Python project structure with UV or Poetry, testing, linting, documentation, and CI/CD
+5. **Package Manager Selection**: Choose between UV (default) and Poetry via `--manager` flag
 2. **GitHub Integration**: Optional GitHub repository creation with automated secret setup
 3. **Publishing Setup**: Automated PyPI token configuration for both local and CI/CD publishing
 4. **Template Customization**: Flexible cookiecutter-based templating system
 
 ### Development Workflow
 
-The project uses Poetry for dependency management with multiple optional dependency groups:
+The project uses UV for dependency management with multiple dependency groups:
 - `test`: pytest and testing utilities
 - `lint`: black, isort, flake8, pylint, mypy
 - `docs`: Sphinx and documentation tools

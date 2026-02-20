@@ -332,7 +332,7 @@ function tests:cov {
     echo "Running tests with coverage..."
     TEST_FILE="${1:-$(get:python:files:tests)}"
     shift || true
-    poetry run pytest "$TEST_FILE" --cov={{ cookiecutter.package_name }}  --cov-report=term "$@"
+    poetry run pytest "$TEST_FILE" --cov={{ cookiecutter.package_name }} --cov-report=term "$@"
 }
 
 # Run tests in verbose mode

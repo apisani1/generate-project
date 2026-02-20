@@ -59,14 +59,6 @@ fi
 # === VERSION AND CHANGELOG ===
 
 if $DRY_RUN; then
-    echo "Would set Poetry version to $NEW_VERSION"
-else
-    echo "Resetting version to $NEW_VERSION..."
-    poetry version "$NEW_VERSION"
-    check_command "Failed to update version"
-fi
-
-if $DRY_RUN; then
     echo "Would update all versioned files"
     RAW_OUTPUT=$(scripts/update_versions.py "$NEW_VERSION" --dry-run 2>&1)
     echo "$RAW_OUTPUT" >&2

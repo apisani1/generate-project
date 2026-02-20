@@ -49,7 +49,7 @@ lint = [
     "isort>=6.0.0",
 ]
 typing = [
-    "mypy>=1.16,<1.19",
+    "mypy>=1.15",
 ]
 docs = [
     "sphinx>=8.1.3",
