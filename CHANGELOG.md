@@ -1,8 +1,6 @@
 # Changelog
 
-## [1.3.0rc1] - 2026-02-17
-
-## Release Candidate v1.3.0 - UV Package Manager Support and Release Script Improvements
+# Release v1.3.0 - UV Package Manager Support and Release Script Improvements
 
 ### New Features
 - ✨ Add UV template and `--manager` flag for package manager selection (Poetry or UV)
@@ -20,6 +18,7 @@
 - 🐛 Handle missing `tomli` gracefully in `update_versions.py`
 - 🐛 Improve venv/conda handling and add `venv-clean` target
 - 🐛 Compare against HEAD in `get:python:files:diff`
+- 🐛 Fix skip lint-diff and format-diff when no files changed
 
 ### Refactoring
 - ♻️ Encapsulate rollback state in `RollbackState` class
@@ -129,39 +128,12 @@ generate-project generate my-lib --library
 This is a backward-compatible release. Existing behavior is preserved - projects generated without the `--library` flag will continue to be application projects with CLI entry points.
 
 
-## [1.2.0b2] - 2026-02-06
-
- ### Changes
-- 📝 docs: update app Quick Start to show CLI usage instead of Python import
-
-
-
-## [1.2.0b1] - 2026-02-06
-
- ### Changes
-- 📝 docs: adapt documentation templates for app vs library projects
-- ✅ test: add tests for library vs application project types
-- ✨ feat: add --library flag for library vs application projects
-
-
-
 ## [1.1.1] - 2026-02-05
 
  ### Changes
+ - ✨ feat: add --version option to CLI
 - 📝 docs: add documentation for --version option
-
-
-## [1.1.1rc2] - 2026-02-05
-
- ### Changes
 - 🐛 fix: correct GitHub Actions script context in docs workflow
-
-
-
-## [1.1.1rc1] - 2026-02-05
-
- ### Changes
-- ✨ feat: add --version option to CLI
 - 🐛 fix: search for .env file from current working directory
 
 
@@ -180,80 +152,6 @@ This is a backward-compatible release. Existing behavior is preserved - projects
 📝 Enhanced reference documentation with comprehensive `v1.1.0` features and examples   
 📝 Improved publishing setup documentation and command examples   
 📝 Improved command `--help` with context-specific help epilogs   
-
-
-## [1.0.3rc11] - 2025-12-19
-
- ### Changes
-- 📝 docs: add context-specific help epilogs for CLI commands
-- ♻️ refactor: consolidate credential file creation into generic function
-
-
-
-## [1.0.3rc10] - 2025-12-19
-
- ### Changes
-- 🐛 fix: resolve FileNotFoundError in project generation
-
-
-
-## [1.0.3rc9] - 2025-12-18
-
- ### Changes
-- fix: add template documentation and fix bash syntax errors
-- feat: implement tool-agnostic credential management
-
-
-
-## [1.0.3rc7] - 2025-12-16
-
- ### Changes
-- 🐛 fix: add v2 prefix to Poetry cache keys to force invalidation
-- 🐛 fix: include poetry.lock in CI cache key for proper invalidation
-- 🐛 fix: add roman package for Sphinx/Python 3.13 compatibility
-
-
-## [1.0.3rc6] - 2025-12-15
-
- ### Changes
-- ♻️ refactor: simplify publishing instructions output
-
-
-
-## [1.0.3rc5] - 2025-12-15
-
- ### Changes
-- 💄 style: improve color consistency in terminal output
-
-
-
-## [1.0.3rc4] - 2025-12-15
-
- ### Changes
-- refactor: simplify GitHub repository ownership check
-
-
-
-## [1.0.3rc3] - 2025-12-15
-
- ### Changes
-- 🐛 fix: improve error message when directory already exists
-
-
-
-## [1.0.3rc2] - 2025-12-15
-
- ### Changes
-- 🐛 fix: prevent crash when GitHub repository already exists
-
-
-
-## [1.0.3rc1] - 2025-12-15
-
- ### Changes
-- feat: activate ReadTheDocs for all version tags
-- feat: modernize project with PEP 621 dual format (root + template)
-  
 
 
 ## [1.0.2.post1] - 2025-07-09
@@ -277,41 +175,7 @@ This is a backward-compatible release. Existing behavior is preserved - projects
 - Include template folder in the generated package
 
 
-
 ## [1.0.1.post2] - 2025-07-04
 
  ### Changes
-- Add test suite
-- Add user configuration file
-
-
-## [1.0.1.post1] - 2025-07-03
-
- ### Changes
-- Update README.md
-
-
-
-## [1.0.1] - 2025-07-02
-
- ### Changes
-- First release
-
-
-## [1.0.0] - 2025-07-02
-
- ### Changes
-- First release
-
-
-## [0.1.0] - 2025-07-02
-
- ### Changes
-- First release
-
-
-## [0.1.0] - 2025-07-02
-
- ### Changes
 - First version
-
