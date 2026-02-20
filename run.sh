@@ -194,6 +194,10 @@ function lint {
 # Run all linters on changed files
 function lint:diff {
     PYTHON_FILES=$(get:python:files:diff)
+    if [ -z "$PYTHON_FILES" ]; then
+        echo "No changed Python files to lint."
+        return 0
+    fi
     echo "Running linters on changed files..."
     lint:mypy "$PYTHON_FILES" ".mypy_cache_diff"
     lint:flake8 "$PYTHON_FILES"
@@ -271,6 +275,10 @@ function format:check {
 # Run formatters on changed files
 function format:diff {
     PYTHON_FILES=$(get:python:files:diff)
+    if [ -z "$PYTHON_FILES" ]; then
+        echo "No changed Python files to format."
+        return 0
+    fi
     echo "Running formatters on changed files..."
     format:black "$PYTHON_FILES"
     format:isort "$PYTHON_FILES"
