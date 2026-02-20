@@ -200,7 +200,7 @@ clean:
 build:
 	@./run.sh build
 
-# Publish to TestPyPI not using auth.toml authentication token (strict mode)
+# Publish to TestPyPI using token from .env (strict mode)
 publish-test-strict:
 	@./run.sh publish:test:strict
 
@@ -208,7 +208,7 @@ publish-test-strict:
 publish-test:
 	@./run.sh publish:test
 
-# Publish to PyPI not using auth.toml authentication token (strict mode)
+# Publish to PyPI using token from .env (strict mode)
 publish-strict:
 	@./run.sh publish:strict
 
