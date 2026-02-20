@@ -24,6 +24,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify tag is on main branch
+        run: |
+          if ! git branch --contains ${{ github.ref_name }} | grep -q 'main'; then
+            echo "::error::Tag ${{ github.ref_name }} is not on the main branch. Releases must be tagged from main."
+            exit 1
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
