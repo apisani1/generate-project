@@ -3,6 +3,7 @@
 
 import os
 
+
 PROJECT_TYPE = "{{ cookiecutter.project_type }}"
 PACKAGE_NAME = "{{ cookiecutter.package_name }}"
 
