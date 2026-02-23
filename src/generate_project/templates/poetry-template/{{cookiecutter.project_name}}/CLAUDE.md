@@ -52,3 +52,13 @@ make build                # Build package with Poetry
 make validate-build       # Validate package builds correctly
 make clean                # Clean build artifacts
 ```
+
+## Development Workflow
+
+The project uses Poetry for dependency management with multiple optional dependency groups:
+- `test`: pytest and testing utilities
+- `lint`: black, isort, flake8, pylint, mypy
+- `docs`: Sphinx and documentation tools
+- `typing`: mypy type checking
+
+Code formatting follows Black style with 119 character line length. All tools are configured in `pyproject.toml`.

@@ -25,7 +25,6 @@ from dotenv import (
 )
 from generate_project import __version__  # noqa: F401
 
-
 TOKEN_NAMES = ["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"]
 
 PYPIRC_FILE_TEMPLATE = """[distutils]
@@ -93,7 +92,7 @@ def generate_project(
     project_name: str,
     template_path: Path,
     env_file: Path,
-    package_manager: str = "poetry",
+    package_manager: str = "uv",
     install_deps: bool = True,
     init_git: bool = True,
     create_github: bool = False,
@@ -582,7 +581,7 @@ def update_config_file(user_config_file_path: Path, user_config: Dict, args: Dic
 # Main epilog
 MAIN_EPILOG = """
 Available Commands:
-  generate    Create a new Python project with Poetry or UV, testing, and CI/CD
+  generate    Create a new Python project with UV or Poetry, testing, and CI/CD
   config      Configure default values for project generation
 
 Quick Start:
@@ -609,8 +608,8 @@ Publishing Setup:
   - Creates GitHub repository secrets from .env tokens
 
 Examples:
-  %(prog)s my-project                                                # Basic project (Poetry)
-  %(prog)s --manager uv my-project                                   # Basic project (UV)
+  %(prog)s my-project                                                # Basic project (UV)
+  %(prog)s --manager poetry my-project                               # Basic project (Poetry)
   %(prog)s --local-env my-project                                    # Create local .env file with auth tokens
   %(prog)s --github my-project                                       # Create GitHub repo
   %(prog)s --public my-project                                       # Public GitHub repo
@@ -662,7 +661,7 @@ def print_args(**kwargs: Optional[Dict]) -> None:
 
 def main() -> None:
     # Read configuration files
-    global_config_file_path = Path(__file__).parent / "templates" / "poetry-template" / "cookiecutter.json"
+    global_config_file_path = Path(__file__).parent / "templates" / "uv-template" / "cookiecutter.json"
     cookiecutter_config = read_json_file(global_config_file_path)
     user_config_file_path = Path(__file__).parent / "templates" / "config.yaml"
     user_config = read_yaml_file(user_config_file_path).get("default_context", {})
@@ -670,7 +669,7 @@ def main() -> None:
 
     # Create main parser
     parser = argparse.ArgumentParser(
-        description="Create and configure Python projects with Poetry or UV.",
+        description="Create and configure Python projects with UV or Poetry.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=MAIN_EPILOG,
     )
@@ -687,7 +686,7 @@ def main() -> None:
     generate_parser = subparsers.add_parser(
         "generate",
         help="Generate a new Python project",
-        description="Create a new Python project managed with Poetry or UV.",
+        description="Create a new Python project managed with UV or Poetry.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=GENERATE_EPILOG,
     )
@@ -751,7 +750,7 @@ def main() -> None:
         type=str,
         choices=["poetry", "uv"],
         default=None,
-        help="Package manager for the generated project (default: poetry)",
+        help="Package manager for the generated project (default: uv)",
     )
 
     # Create the config subparser
@@ -778,7 +777,7 @@ def main() -> None:
         type=str,
         choices=["poetry", "uv"],
         default=None,
-        help="Set default package manager (poetry or uv)",
+        help="Set default package manager (uv or poetry)",
     )
 
     # Parse arguments
@@ -811,7 +810,7 @@ def main() -> None:
 
         # Determine package manager (CLI flag > config > default)
         if args.package_manager is None:
-            args.package_manager = user_config.get("package_manager", "poetry")
+            args.package_manager = user_config.get("package_manager", "uv")
 
         # Set template path based on package manager (if not explicitly provided)
         if args.template_path is None:

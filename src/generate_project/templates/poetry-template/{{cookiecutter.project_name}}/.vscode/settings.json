@@ -40,7 +40,7 @@
     "workbench.startupEditor": "none",
     "workbench.editorAssociations": {
         "*.ipynb": "jupyter-notebook",
-        "*.md": "vscode.markdown.preview.editor",
+        "*.md": "default",
         "*.svg": "default",
     },
     "workbench.colorTheme": "Default Dark+",

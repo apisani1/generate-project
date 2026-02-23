@@ -23,6 +23,8 @@ on:
 jobs:
   docs:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -31,39 +33,32 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Cache Poetry dependencies
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
+
+      - name: Cache UV dependencies
         uses: actions/cache@v4
         with:
           path: .venv
-          key: ${{ runner.os }}-poetry-v2-${{ hashFiles('**/poetry.lock', '**/pyproject.toml') }}
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock', '**/pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-v2-
-
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          poetry --version
-
-      - name: Configure Poetry
-        run: |
-          poetry config virtualenvs.create true
-          poetry config virtualenvs.in-project true
+            ${{ runner.os }}-uv-
 
       - name: Install Dependencies
         run: |
-          poetry install --with docs --verbose
+          uv sync --group docs
 
       - name: Check Documentation Quality
         run: |
           cd docs
-          poetry run doc8 . || echo "Documentation quality check found issues"
-          poetry run make linkcheck || echo "Link check found broken links"
+          uv run doc8 . || echo "Documentation quality check found issues"
+          uv run make linkcheck || echo "Link check found broken links"
         continue-on-error: true
 
       - name: Build Documentation
         run: |
           cd docs
-          poetry run make SPHINXOPTS="-v" html
+          uv run make SPHINXOPTS="-v" html
         env:
           PYTHONPATH: ${{ github.workspace }}/src
           SPHINX_DEBUG: 1
@@ -72,9 +67,12 @@ jobs:
         if: always()
         run: |
           echo "Checking docs build directory..."
-          cd docs/_build/html
-          ls -la
-          if [ -f "index.html" ]; then
+          if [ ! -d "docs/_build/html" ]; then
+            echo "Documentation build failed - docs/_build/html not found"
+            exit 1
+          fi
+          ls -la docs/_build/html
+          if [ -f "docs/_build/html/index.html" ]; then
             echo "Documentation built successfully"
           else
             echo "Documentation build failed - no index.html"

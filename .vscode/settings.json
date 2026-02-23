@@ -172,7 +172,7 @@
         "--line-length=119"
     ],
     "flake8.importStrategy": "fromEnvironment",
-    "flake8.path": ["poetry", "run", "flake8"],
+    "flake8.path": ["uv", "run", "flake8"],
     "isort.check": true,
     "isort.importStrategy": "fromEnvironment",
     "ruff.organizeImports": false,

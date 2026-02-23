@@ -4,11 +4,11 @@
 [![Documentation Status](https://readthedocs.org/projects/generate-project/badge/?version=latest)](https://generate-project.readthedocs.io/en/latest/?badge=latest)
 
 # Generate Project 
-A Python project folder generator with support for **Poetry** and **UV** package managers. The generated folder provides everything you need to get started with a well-structured Python project, including development tasks for formatting, linting, documentation, testing, and CI/CD.
+A Python project folder generator with support for **UV** and **Poetry** package managers. The generated folder provides everything you need to get started with a well-structured Python project, including development tasks for formatting, linting, documentation, testing, and CI/CD.
 
 ## Features
 
-📦 Poetry or UV for dependency management and packaging   
+📦 UV or Poetry for dependency management and packaging
 🧹 Code quality tools including  black, isort, flake8, mypy and pylint        
 📚 Sphinx based documentation with auto-generated API docs and live preview   
 ✅ Testing framework with pytest and test coverage reports   
@@ -98,19 +98,19 @@ generate-project generate "project-name"
 
 ## Package Manager
 
-By default, generate-project creates projects using **Poetry**. Use the `--manager` flag to select **UV** instead:
+By default, generate-project creates projects using **UV**. Use the `--manager` flag to select **Poetry** instead:
 
 | Manager | Build Backend | Dependency Format | Command |
 |---------|--------------|-------------------|---------|
-| Poetry (default) | poetry-core | `[tool.poetry.dependencies]` | `--manager poetry` |
-| UV | hatchling | `[dependency-groups]` (PEP 735) | `--manager uv` |
+| UV (default) | hatchling | `[dependency-groups]` (PEP 735) | `--manager uv` |
+| Poetry | poetry-core | `[tool.poetry.dependencies]` | `--manager poetry` |
 
 ```bash
-# Poetry project (default)
+# UV project (default)
 generate-project generate my-project
 
-# UV project
-generate-project generate my-project --manager uv
+# Poetry project
+generate-project generate my-project --manager poetry
 ```
 
 ## Project Structure
