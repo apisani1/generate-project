@@ -2,12 +2,19 @@
 
 from datetime import datetime
 from itertools import product
+from pathlib import Path
 from typing import Optional
 
 import pytest
-from packaging.version import Version
 
-from scripts.release import PrereleaseType, ReleaseType, RollbackState, bump_version
+from packaging.version import Version
+from scripts.release import (
+    PrereleaseType,
+    ReleaseType,
+    RollbackState,
+    bump_version,
+)
+
 
 BASE_VERSIONS = [
     "0.0.0",
@@ -217,7 +224,9 @@ def test_bump_version_expected_values(
 ) -> None:
     """Verify exact output for key bump scenarios."""
     result = bump_version(Version(current_text), release_type, prerelease_type, interactive=False)
-    assert result == Version(expected), f"{current_text} + {release_type.value}({prerelease_type}) → {result}, expected {expected}"
+    assert result == Version(
+        expected
+    ), f"{current_text} + {release_type.value}({prerelease_type}) → {result}, expected {expected}"
 
 
 # ── RollbackState unit tests ─────────────────────────────────────────────────
@@ -226,21 +235,21 @@ def test_bump_version_expected_values(
 class TestRollbackState:
     """Tests for the RollbackState class."""
 
-    def _make_state(self, tmp_path):
+    def _make_state(self, tmp_path: Path) -> RollbackState:
         """Create a RollbackState with PICKLE_FILE pointing to tmp_path."""
         state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
         state.PICKLE_FILE = str(tmp_path / "test_state.pkl")
         return state
 
-    def test_init(self):
+    def test_init(self) -> None:
         dt = datetime.now().astimezone()
         version = Version("1.2.3")
         state = RollbackState(dt, version)
         assert state.start_dt == dt
         assert state.current_version == version
-        assert state.files_backup == []
+        assert not state.files_backup
 
-    def test_add_to_backup(self):
+    def test_add_to_backup(self) -> None:
         state = RollbackState(datetime.now().astimezone(), Version("1.0.0"))
         state.add_to_backup([("a.txt", "content_a")])
         assert state.files_backup == [("a.txt", "content_a")]
@@ -251,7 +260,7 @@ class TestRollbackState:
             ("c.txt", "content_c"),
         ]
 
-    def test_save_and_load(self, tmp_path, monkeypatch):
+    def test_save_and_load(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         state = self._make_state(tmp_path)
         state.add_to_backup([("file.txt", "original")])
         pickle_path = state.PICKLE_FILE
@@ -263,12 +272,12 @@ class TestRollbackState:
         assert loaded.start_dt == state.start_dt
         assert loaded.files_backup == [("file.txt", "original")]
 
-    def test_load_file_not_found(self, tmp_path, monkeypatch):
+    def test_load_file_not_found(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(RollbackState, "PICKLE_FILE", str(tmp_path / "missing.pkl"))
         with pytest.raises(FileNotFoundError):
             RollbackState.load()
 
-    def test_restore_files(self, tmp_path):
+    def test_restore_files(self, tmp_path: Path) -> None:
         file_a = tmp_path / "a.txt"
         file_b = tmp_path / "b.txt"
         file_a.write_text("modified_a")
@@ -281,18 +290,18 @@ class TestRollbackState:
         assert file_a.read_text() == "original_a"
         assert file_b.read_text() == "original_b"
 
-    def test_restore_files_skips_missing(self, tmp_path):
+    def test_restore_files_skips_missing(self, tmp_path: Path) -> None:
         state = RollbackState(datetime.now().astimezone(), Version("1.0.0"))
         state.files_backup = [(str(tmp_path / "nonexistent.txt"), "content")]
         state.restore_files()  # should not raise
 
-    def test_cleanup_removes_pickle(self, tmp_path):
+    def test_cleanup_removes_pickle(self, tmp_path: Path) -> None:
         state = self._make_state(tmp_path)
         state.save()
         assert (tmp_path / "test_state.pkl").exists()
         state.cleanup()
         assert not (tmp_path / "test_state.pkl").exists()
 
-    def test_cleanup_no_file(self, tmp_path):
+    def test_cleanup_no_file(self, tmp_path: Path) -> None:
         state = self._make_state(tmp_path)
         state.cleanup()  # should not raise

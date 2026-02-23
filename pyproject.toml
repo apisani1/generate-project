@@ -81,6 +81,12 @@ testpaths = ["tests"]
 markers = ["manual: tests that only run when explicitly targeted"]
 addopts = "-m 'not manual'"
 
+[tool.coverage.run]
+omit = ["src/generate_project/templates/*"]
+
+[tool.coverage.report]
+omit = ["src/generate_project/templates/*"]
+
 [tool.black]
 line-length = 119
 extend-exclude = '''

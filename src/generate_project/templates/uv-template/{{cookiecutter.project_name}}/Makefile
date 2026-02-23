@@ -1,4 +1,4 @@
-.PHONY: all format lint test tests help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc release-beta release-alpha release-major-a release-major-b release-major-rc release-minor-a release-minor-b release-minor-rc release-micro-a release-micro-b release-micro-rc rollback venv venv-clean
+.PHONY: all format lint lint-mypy lint-flake8 lint-pylint test tests test-manual help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc release-beta release-alpha release-major-a release-major-b release-major-rc release-minor-a release-minor-b release-minor-rc release-micro-a release-micro-b release-micro-rc rollback venv venv-clean
 
 ######################
 # This automation tasks were inspired by automation patterns from
@@ -68,13 +68,13 @@ requirements:
 lint:
 	@./run.sh lint
 
-mypy:
+lint-mypy:
 	@./run.sh lint:mypy
 
-flake8:
+lint-flake8:
 	@./run.sh lint:flake8
 
-pylint:
+lint-pylint:
 	@./run.sh lint:pylint
 
 # Run all linters on changed files
@@ -125,6 +125,10 @@ test-cov:
 test-verbose:
 	@./run.sh tests:verbose
 
+# Run tests marked as manual
+test-manual:
+	@uv run pytest -m manual
+
 # Run tests that match a specific pattern
 test-pattern:
 	@if [ -z "$(p)" ]; then \
@@ -170,6 +174,7 @@ help-test:
 	@echo 'Test targets:'
 	@echo '  make test-verbose         - Run tests with verbose output'
 	@echo '  make test-cov             - Run tests with coverage report'
+	@echo '  make test-manual          - Run tests marked as manual'
 	@echo '  make test-pattern p=<pat> - Run tests matching pattern'
 	@echo '  make test-file f=<file>   - Run tests in specific file'
 
@@ -330,6 +335,7 @@ help:
 	@echo '  make test                 - Run tests'
 	@echo '  make test-cov             - Run tests with coverage'
 	@echo '  make test-verbose         - Run tests in verbose mode'
+	@echo '  make test-manual          - Run tests marked as manual'
 	@echo '  make test-pattern p=<pat> - Run tests matching pattern'
 	@echo '  make coverage             - Generate coverage report'
 	@echo '  make help-test            - Show help for pytest options'
