@@ -1,5 +1,82 @@
 # Changelog
 
+## [2.0.0] - 2026-02-23
+
+# Release v2.0.0 - Migration to UV package manager
+
+## Overview
+
+v2.0.0 completes the migration of `generate-project` itself from Poetry to UV, and makes **UV the default package manager** for generated projects. Poetry remains fully supported via `--manager poetry`.
+
+This is a major release due to the change in default behavior: projects generated without a `--manager` flag now use UV instead of Poetry.
+
+---
+
+## Breaking Changes
+
+- **UV is now the default package manager.** Running `generate-project my-project` generates a UV-based project. To generate a Poetry project, use `--manager poetry`.
+- `poetry.lock` has been replaced by `uv.lock` in this repository.
+- Development workflow commands now use `uv` instead of `poetry` (see updated `CLAUDE.md` and `run.sh`).
+
+---
+
+## New Features
+
+- **UV default template**: Generated projects use UV + hatchling by default, including PEP 735 dependency groups, `uv sync`, `uv run`, and `uv build`.
+- **`--manager poetry` flag**: Explicitly opt in to Poetry-based project generation.
+
+---
+
+## Migration: Repository Build System
+
+The `generate-project` package itself has been migrated from Poetry to UV:
+
+| Area | Before | After |
+|------|--------|-------|
+| Build backend | `poetry-core` | `hatchling` |
+| Dependency file | `poetry.lock` | `uv.lock` |
+| Dependency groups | `[tool.poetry.group.*]` | PEP 735 `[dependency-groups]` |
+| Install | `poetry install --with dev,test,...` | `uv sync --all-groups` |
+| Run tool | `poetry run <tool>` | `uv run <tool>` |
+| Build package | `poetry build` | `uv build` |
+| Publish | `poetry publish` | `uv publish` |
+
+---
+
+## Improvements
+
+### Developer Experience
+- Added `lint-mypy`, `lint-flake8`, `lint-pylint` Makefile targets for running individual linters (applied to root project and both templates).
+- Added `test-manual` Makefile target (`uv run pytest -m manual`) to run manually-marked tests (applied to root project and both templates).
+- Fixed `make test-cov` module path (`--cov=src/generate_project`) to eliminate spurious "never imported" warnings.
+- Fixed `make coverage` error caused by template files being parsed as Python source — added `omit` config for `src/generate_project/templates/*`.
+
+### CI/CD
+- Added main branch guard to all three `release.yml` files (root, UV template, Poetry template): tags not on `main` are rejected with a clear error message.
+- Migrated all three GitHub Actions workflows (`tests.yml`, `release.yml`, `docs.yml`) to UV.
+- Added `pull-requests: write` permission to `docs.yml` to allow PR comments with documentation preview links.
+- Poetry is installed in `tests.yml` so that Poetry template tests continue to run in CI.
+- Fixed `docs.yml` Build Output check to handle missing `_build/html` directory gracefully.
+- Fixed `docs/Makefile` — `poetry run` references were missed during the initial migration.
+
+### Formatting / Tooling
+- Set `lines_after_imports = 1` in isort config to align with black 26.1.0's formatting rules (resolves isort/black conflict on module-level variable assignments).
+
+---
+
+## Upgrade Notes
+
+If you use the `generate-project` CLI:
+- No changes to the CLI interface, except the default package manager is now UV.
+- To preserve existing behavior, add `--manager poetry` to your commands or set `package_manager: poetry` in your `config.yaml`.
+
+If you develop `generate-project` itself:
+- Run `uv sync --all-groups` instead of `poetry install --with dev,test,lint,typing,docs`.
+- Use `uv run <tool>` instead of `poetry run <tool>`.
+- See the updated [CLAUDE.md](CLAUDE.md) for the full development workflow.
+- 
+
+
 ## [1.3.0] - 2026-02-20
 
 # Release v1.3.0 - UV Package Manager Support and Release Script Improvements
