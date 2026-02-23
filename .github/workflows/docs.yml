@@ -65,9 +65,12 @@ jobs:
         if: always()
         run: |
           echo "Checking docs build directory..."
-          cd docs/_build/html
-          ls -la
-          if [ -f "index.html" ]; then
+          if [ ! -d "docs/_build/html" ]; then
+            echo "Documentation build failed - docs/_build/html not found"
+            exit 1
+          fi
+          ls -la docs/_build/html
+          if [ -f "docs/_build/html/index.html" ]; then
             echo "Documentation built successfully"
           else
             echo "Documentation build failed - no index.html"

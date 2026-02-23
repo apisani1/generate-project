@@ -25,7 +25,6 @@ from dotenv import (
 )
 from generate_project import __version__  # noqa: F401
 
-
 TOKEN_NAMES = ["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"]
 
 PYPIRC_FILE_TEMPLATE = """[distutils]
