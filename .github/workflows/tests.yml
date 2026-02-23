@@ -28,6 +28,9 @@ jobs:
       - name: Install UV
         uses: astral-sh/setup-uv@v5
 
+      - name: Install Poetry
+        run: pip install poetry
+
       - name: Cache UV dependencies
         uses: actions/cache@v4
         with:
