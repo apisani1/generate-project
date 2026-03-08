@@ -106,3 +106,6 @@ Tests are located in `tests/` and use pytest with the following specialized test
 - `test_github.py`: Tests GitHub integration features
 
 The project excludes cookiecutter template files from linting and type checking to avoid conflicts with template syntax.
+
+See @./notes for additional private information
+
