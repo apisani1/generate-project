@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.0.post1] - 2026-03-09
+
+# Release v2.0.0.post1 — Documentation & Template Improvements
+
+## Overview
+
+Post-release with no functional changes. Improves Claude Code context files (CLAUDE.md) across the repo and both cookiecutter templates, and adds a private notes folder scaffold to generated projects.
+
+---
+
+## Improvements
+
+### Claude Code Context (CLAUDE.md)
+- **Repo CLAUDE.md**: Added `CLI Usage` section with practical examples for all major flag combinations; added `Environment & Prerequisites` section documenting required tokens (`PYPI_TOKEN`, `TEST_PYPI_TOKEN`, `RTD_TOKEN`) and `gh auth login` requirement; added `Gotchas` section covering template sync, `--library` behavior, config precedence, and more.
+- **Template CLAUDE.md** (UV & Poetry): Added `Code Style` section (Black 119 chars, isort, flake8/pylint/mypy); added `Project Structure` placeholder prompting developers to document their project; added `Gotchas` placeholder with tip about the `#` key shortcut; added `@./notes` reference.
+
+### Generated Project Templates (UV & Poetry)
+- Added `notes/` to `.gitignore` in both templates (local-only private notes).
+- Added `notes/project-notes.md` scaffold with sections for Overview, Ideas, Architecture Decisions, Claude Code Context, and References.
+
+
 ## [2.0.0] - 2026-02-23
 
 # Release v2.0.0 - Migration to UV package manager
