@@ -48,5 +48,5 @@ ENV/
 *.pkl
 *.pickle
 
-# Obsidian project notes (local only)
+# Project notes (local only)
 notes/

@@ -37,6 +37,9 @@ coverage.xml
 # Claude
 .claude/*
 
+# Project notes (local only)
+notes/
+
 # Environment
 .venv
 env/

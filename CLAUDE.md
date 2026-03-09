@@ -53,6 +53,70 @@ make validate-build       # Validate package builds correctly
 make clean                # Clean build artifacts
 ```
 
+## CLI Usage
+
+```bash
+# Basic project (UV, private GitHub repo)
+generate-project generate my-project --github
+
+# Library project (no CLI entry point) with secrets
+generate-project generate my-lib --library --github --secrets
+
+# Public repo with PyPI token files
+generate-project generate my-project --public --secrets --local-env --pypirc
+
+# Use Poetry instead of UV
+generate-project generate my-project --manager poetry
+
+# Generate in current directory
+generate-project generate .
+
+# Update user defaults
+generate-project config --author_name "Jane Doe" --email "jane@example.com" --manager uv
+```
+
+**Key flags:**
+- `--library` — removes CLI entry point (for libraries, not apps)
+- `--github` / `--public` — create private/public GitHub repo (requires `gh` CLI)
+- `--secrets` — push PYPI_TOKEN, RTD_TOKEN to GitHub repo secrets
+- `--local-env` — create `.env` with token placeholders
+- `--pypirc` — create `.pypirc` with token placeholders
+- `--no-install` / `--no-git` — skip dependency install / git init
+
+## Environment & Prerequisites
+
+**GitHub integration** (`--github`, `--public`, `--secrets`) requires:
+```bash
+gh auth login   # authenticate GitHub CLI
+```
+
+**Token files** (`--secrets`, `--local-env`, `--pypirc`) use these env vars:
+| Variable | Used for |
+|----------|---------|
+| `PYPI_TOKEN` | PyPI publishing |
+| `TEST_PYPI_TOKEN` | TestPyPI |
+| `RTD_TOKEN` | ReadTheDocs webhook |
+
+Store tokens in a `.env` file at project root (auto-discovered via `python-dotenv`). If a token is
+missing, placeholder text is written to the output file instead.
+
+**Config file location** (persists user defaults across projects):
+```bash
+python -c "import generate_project; print(generate_project.__file__.replace('__init__.py', 'templates/config.yaml'))"
+```
+
+## Gotchas
+
+- **Template sync**: Three `release.yml` files must stay in sync: `.github/workflows/release.yml`,
+  `uv-template/.../release.yml`, and `poetry-template/.../release.yml`
+- **Package name**: Auto-derived from project name (lowercase, hyphens→underscores). Cannot differ.
+- **`--library` flag**: Removes `src/<package>/main.py` post-generation (no CLI entry point)
+- **`.` as project name**: Generates into current directory instead of creating a new dir
+- **`--pypirc` vs `--local-env`**: Former creates `~/.pypirc` for local `twine`/`poetry publish`;
+  latter creates `.env` for GitHub Actions CI secrets
+- **`gh` branch fallback**: If `main` push fails, automatically tries `master`
+- **Config precedence**: CLI flag > `config.yaml` user defaults > hardcoded "uv" default
+
 ## Project Architecture
 
 This is a Python project generator tool that creates well-structured Python projects using cookiecutter templates.

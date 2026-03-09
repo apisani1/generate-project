@@ -61,4 +61,26 @@ The project uses Poetry for dependency management with multiple optional depende
 - `docs`: Sphinx and documentation tools
 - `typing`: mypy type checking
 
-Code formatting follows Black style with 119 character line length. All tools are configured in `pyproject.toml`.
+Use `poetry add <pkg>` to add dependencies and `poetry install` to install from lockfile. Avoid using `pip install` directly.
+
+## Code Style
+
+- Formatter: Black with 119 character line length
+- Import sorting: isort (configured to be Black-compatible)
+- Linting: flake8 + pylint + mypy (all configured in `pyproject.toml`)
+- Do not add inline `# noqa` without a specific reason
+
+## Project Structure
+
+<!-- FILL IN: Describe what this project does and its key directories/files. Example:
+- `src/{{ cookiecutter.package_name }}/main.py`: CLI entry point
+- `src/{{ cookiecutter.package_name }}/core.py`: Core business logic
+- `tests/`: pytest tests mirroring src structure
+-->
+
+## Gotchas
+
+<!-- FILL IN: Add project-specific gotchas as you discover them.
+     Tip: Press `#` during a Claude Code session to auto-incorporate session learnings here. -->
+
+See @./notes for additional private information
