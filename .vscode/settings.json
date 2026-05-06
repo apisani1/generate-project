@@ -44,7 +44,7 @@
         "*.svg": "default",
         "*.copilotmd": "vscode.markdown.preview.editor"
     },
-    "workbench.colorTheme": "Default Dark+",
+    "workbench.colorTheme": "Dark+",
     "git.enableSmartCommit": true,
     "git.autofetch": true,
     "git.confirmSync": false,
@@ -194,6 +194,6 @@
         "pylint"
     ],
     "pylint.args": [
-        "--ignored-paths=^(tests\\/test.*\\.py|scripts\\/.*\\.py|docs\\/.*\\.py)$",
+        "--ignore-paths=^(tests\\/test.*\\.py|scripts\\/.*\\.py|docs\\/.*\\.py)$",
     ],
 }

@@ -193,6 +193,6 @@
         "pylint"
     ],
     "pylint.args": [
-        "--ignored-paths=^(tests\\/test.*\\.py|scripts\\/.*\\.py|docs\\/.*\\.py)$",
+        "--ignore-paths=^(tests\\/test.*\\.py|scripts\\/.*\\.py|docs\\/.*\\.py)$",
     ],
 }
