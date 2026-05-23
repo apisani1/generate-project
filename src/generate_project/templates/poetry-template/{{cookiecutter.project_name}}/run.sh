@@ -207,10 +207,37 @@ function lint:diff {
         echo "No changed Python files to lint."
         return 0
     fi
+
+    # Linters ignore project-wide excludes (e.g. [tool.mypy] exclude in
+    # pyproject.toml) when files are passed positionally. Read the mypy
+    # exclude regex from pyproject.toml so `make pre-commit` matches the
+    # `make check` semantics (which only lints ./src/{{ cookiecutter.package_name }}/).
+    EXCLUDE_REGEX=$(poetry run python -c '
+import sys
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+with open("pyproject.toml", "rb") as f:
+    cfg = tomllib.load(f)
+print(cfg.get("tool", {}).get("mypy", {}).get("exclude", ""))
+')
+
+    if [ -n "$EXCLUDE_REGEX" ]; then
+        LINT_FILES=$(echo "$PYTHON_FILES" | grep -Ev "$EXCLUDE_REGEX" || true)
+    else
+        LINT_FILES="$PYTHON_FILES"
+    fi
+
+    if [ -z "$LINT_FILES" ]; then
+        echo "No changed Python files to lint (all changed files are excluded)."
+        return 0
+    fi
+
     echo "Running linters on changed files..."
-    lint:mypy "$PYTHON_FILES" ".mypy_cache_diff"
-    lint:flake8 "$PYTHON_FILES"
-    lint:pylint "$PYTHON_FILES"
+    lint:mypy "$LINT_FILES" ".mypy_cache_diff"
+    lint:flake8 "$LINT_FILES"
+    lint:pylint "$LINT_FILES"
 }
 
 # Run all linters on test files
