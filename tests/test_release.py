@@ -1,6 +1,10 @@
 """Exhaustive bump_version matrix tests."""
 
-from datetime import datetime
+import os
+from datetime import (
+    datetime,
+    timedelta,
+)
 from itertools import product
 from pathlib import Path
 from typing import Optional
@@ -18,6 +22,7 @@ from scripts.release import (
     create_release_notes,
     create_tag_message,
     extract_changes_section,
+    read_release_doc,
     update_changelog,
 )
 
@@ -382,3 +387,99 @@ class TestReleaseMessages:
 
         assert changelog.read_text().startswith("# Changelog\n\n## [1.2.4] - 2026-05-30\n\n### Changes\n- Fix")
         assert release_notes_text == "## [1.2.4] - 2026-05-30\n\n### Changes\n- Fix release notes\n"
+
+    def test_release_doc_content_overrides_generated_initial_content(self, tmp_path: Path) -> None:
+        changelog = tmp_path / "CHANGELOG.md"
+        release_notes = tmp_path / RELEASE_NOTES_FILE
+        changelog.write_text("# Changelog\n")
+        state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
+        commit_message = create_commit_message(
+            Version("1.2.4"),
+            "- Generated change",
+            interactive=False,
+            initial_content="custom commit message",
+        )
+        tag_message = create_tag_message(
+            "2026-05-30",
+            Version("1.2.4"),
+            commit_message,
+            interactive=False,
+            initial_content="custom tag message",
+        )
+
+        changelog_entry = update_changelog(
+            str(changelog),
+            "2026-05-30",
+            Version("1.2.4"),
+            commit_message,
+            state,
+            interactive=False,
+            initial_content="## [1.2.4] - 2026-05-30\n\n### Added\n- Custom changelog\n",
+        )
+        release_notes_text = create_release_notes(
+            str(release_notes),
+            Version("1.2.4"),
+            changelog_entry,
+            state,
+            interactive=False,
+            initial_content="## Custom release notes\n",
+        )
+
+        assert commit_message == "custom commit message"
+        assert tag_message == "custom tag message"
+        assert changelog_entry == "## [1.2.4] - 2026-05-30\n\n### Added\n- Custom changelog\n"
+        assert release_notes_text == "## Custom release notes\n"
+
+    def test_read_release_doc_reads_fresh_file(self, tmp_path: Path) -> None:
+        release_docs = tmp_path / "release_docs"
+        release_docs.mkdir()
+        commit_doc = release_docs / "commit.txt"
+        commit_doc.write_text("fresh commit docs")
+
+        content = read_release_doc(
+            release_docs,
+            "commit",
+            "v1.2.3",
+            datetime.now().astimezone() - timedelta(days=1),
+            interactive=False,
+        )
+
+        assert content == "fresh commit docs"
+
+    def test_read_release_doc_falls_back_for_missing_file(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+        release_docs = tmp_path / "release_docs"
+        release_docs.mkdir()
+
+        content = read_release_doc(
+            release_docs,
+            "tag",
+            "v1.2.3",
+            datetime.now().astimezone() - timedelta(days=1),
+            interactive=False,
+        )
+
+        assert content is None
+        assert "Warning:" in capsys.readouterr().out
+
+    def test_read_release_doc_falls_back_for_stale_file(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+        release_docs = tmp_path / "release_docs"
+        release_docs.mkdir()
+        changelog_doc = release_docs / "changelog.md"
+        changelog_doc.write_text("stale changelog")
+        stale_dt = datetime.now().astimezone() - timedelta(days=2)
+        latest_tag_dt = datetime.now().astimezone() - timedelta(days=1)
+        timestamp = stale_dt.timestamp()
+        changelog_doc.touch()
+
+        os.utime(changelog_doc, (timestamp, timestamp))
+
+        content = read_release_doc(
+            release_docs,
+            "changelog",
+            "v1.2.3",
+            latest_tag_dt,
+            interactive=False,
+        )
+
+        assert content is None
+        assert "older than v1.2.3" in capsys.readouterr().out
