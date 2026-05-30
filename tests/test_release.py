@@ -9,12 +9,17 @@ import pytest
 
 from packaging.version import Version
 from scripts.release import (
+    RELEASE_NOTES_FILE,
     PrereleaseType,
     ReleaseType,
     RollbackState,
     bump_version,
+    create_commit_message,
+    create_release_notes,
+    create_tag_message,
+    extract_changes_section,
+    update_changelog,
 )
-
 
 BASE_VERSIONS = [
     "0.0.0",
@@ -290,10 +295,33 @@ class TestRollbackState:
         assert file_a.read_text() == "original_a"
         assert file_b.read_text() == "original_b"
 
-    def test_restore_files_skips_missing(self, tmp_path: Path) -> None:
+    def test_restore_files_recreates_missing_backed_up_file(self, tmp_path: Path) -> None:
+        missing_file = tmp_path / "nonexistent.txt"
         state = RollbackState(datetime.now().astimezone(), Version("1.0.0"))
-        state.files_backup = [(str(tmp_path / "nonexistent.txt"), "content")]
-        state.restore_files()  # should not raise
+        state.files_backup = [(str(missing_file), "content")]
+
+        state.restore_files()
+
+        assert missing_file.read_text() == "content"
+
+    def test_restore_files_deletes_new_file(self, tmp_path: Path) -> None:
+        new_file = tmp_path / "new.txt"
+        new_file.write_text("created during release")
+        state = RollbackState(datetime.now().astimezone(), Version("1.0.0"))
+        state.files_backup = [(str(new_file), None)]
+
+        state.restore_files()
+
+        assert not new_file.exists()
+
+    def test_restore_files_ignores_missing_new_file(self, tmp_path: Path) -> None:
+        missing_file = tmp_path / "already_missing.txt"
+        state = RollbackState(datetime.now().astimezone(), Version("1.0.0"))
+        state.files_backup = [(str(missing_file), None)]
+
+        state.restore_files()
+
+        assert not missing_file.exists()
 
     def test_cleanup_removes_pickle(self, tmp_path: Path) -> None:
         state = self._make_state(tmp_path)
@@ -305,3 +333,52 @@ class TestRollbackState:
     def test_cleanup_no_file(self, tmp_path: Path) -> None:
         state = self._make_state(tmp_path)
         state.cleanup()  # should not raise
+
+
+class TestReleaseMessages:
+    """Tests for the release message formatting pipeline."""
+
+    def test_commit_message_uses_changes_input(self) -> None:
+        message = create_commit_message(Version("1.2.4"), "- Fix release notes", interactive=False)
+
+        assert message.startswith("release 1.2.4: fix(patch)\n\n")
+        assert "Changes\n" in message
+        assert "- Fix release notes" in message
+
+    def test_tag_message_uses_commit_message_as_plain_text(self) -> None:
+        commit_message = create_commit_message(Version("1.2.4"), "- Fix release notes", interactive=False)
+        tag_message = create_tag_message("2026-05-30", Version("1.2.4"), commit_message, interactive=False)
+
+        assert tag_message == "Release v1.2.4 - 2026-05-30\n\n- Fix release notes"
+
+    def test_extract_changes_section_removes_commit_separator(self) -> None:
+        commit_message = create_commit_message(Version("1.2.4"), "- Fix release notes", interactive=False)
+
+        assert extract_changes_section(commit_message) == "- Fix release notes"
+
+    def test_changelog_and_release_notes_use_markdown(self, tmp_path: Path) -> None:
+        changelog = tmp_path / "CHANGELOG.md"
+        release_notes = tmp_path / RELEASE_NOTES_FILE
+        changelog.write_text("# Changelog\n\n## [1.2.3] - 2026-05-01\n\n### Changes\n- Previous\n")
+        state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
+        state.PICKLE_FILE = str(tmp_path / "test_state.pkl")
+        commit_message = create_commit_message(Version("1.2.4"), "- Fix release notes", interactive=False)
+
+        changelog_entry = update_changelog(
+            str(changelog),
+            "2026-05-30",
+            Version("1.2.4"),
+            commit_message,
+            state,
+            interactive=False,
+        )
+        release_notes_text = create_release_notes(
+            str(release_notes),
+            Version("1.2.4"),
+            changelog_entry,
+            state,
+            interactive=False,
+        )
+
+        assert changelog.read_text().startswith("# Changelog\n\n## [1.2.4] - 2026-05-30\n\n### Changes\n- Fix")
+        assert release_notes_text == "## [1.2.4] - 2026-05-30\n\n### Changes\n- Fix release notes\n"
