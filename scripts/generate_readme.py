@@ -9,7 +9,7 @@ ELEMENTS = [
 ]
 
 
-def extract_content(file_path: str, start_marker: Optional[str] = None, end_marker: Optional[str]  = None) -> str:
+def extract_content(file_path: str, start_marker: Optional[str] = None, end_marker: Optional[str] = None) -> str:
     """Extract content between markers from a file."""
     with open(file_path, "r") as f:
         content = f.read()
