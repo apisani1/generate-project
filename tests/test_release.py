@@ -24,6 +24,7 @@ from scripts.release import (
     extract_changes_section,
     read_release_doc,
     update_changelog,
+    update_version_files,
 )
 
 BASE_VERSIONS = [
@@ -483,3 +484,51 @@ class TestReleaseMessages:
 
         assert content is None
         assert "older than v1.2.3" in capsys.readouterr().out
+
+
+class TestUpdateVersionFiles:
+    """Tests for stamping the version into configured files, incl. the PyPI badge cache-bust."""
+
+    BADGES = (
+        "[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\n"
+        "[![PyPI version](https://img.shields.io/pypi/v/generate-project.svg?v=1.2.3)]"
+        "(https://pypi.org/project/generate-project/)\n"
+        "[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)\n"
+    )
+
+    def _write_project(self, tmp_path: Path) -> None:
+        (tmp_path / "pyproject.toml").write_text(
+            'version = "1.2.3"\n\n'
+            "[tool.semantic_release]\n"
+            "version_variable = [\n"
+            '    "pyproject.toml:version",\n'
+            '    "badges.md:v",\n'
+            "]\n"
+        )
+        (tmp_path / "badges.md").write_text(self.BADGES)
+
+    def test_stamps_pypi_badge_cache_bust(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._write_project(tmp_path)
+        monkeypatch.chdir(tmp_path)
+        state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
+
+        update_version_files("pyproject.toml", Version("9.9.9"), state)
+
+        badges = (tmp_path / "badges.md").read_text()
+        # The PyPI badge query is bumped and the markdown link stays intact.
+        assert "pypi/v/generate-project.svg?v=9.9.9)](https://pypi.org/project/generate-project/)" in badges
+        # Other shields badges are untouched.
+        assert "badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)" in badges
+        assert "badge/python-3.10+-blue.svg)](https://www.python.org/)" in badges
+        # pyproject version is bumped too.
+        assert 'version = "9.9.9"' in (tmp_path / "pyproject.toml").read_text()
+
+    def test_records_originals_for_rollback(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._write_project(tmp_path)
+        monkeypatch.chdir(tmp_path)
+        state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
+
+        update_version_files("pyproject.toml", Version("9.9.9"), state)
+
+        backed_up = {path: content for path, content in state.files_backup}
+        assert backed_up["badges.md"] == self.BADGES

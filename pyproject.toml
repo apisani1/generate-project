@@ -39,6 +39,8 @@ version_variable = [
     "pyproject.toml:version",
     "docs/conf.py:release",
     "src/generate_project/__init__.py:__version__",
+    "README.md:v",
+    "docs/source/badges.md:v",
 ]
 
 [dependency-groups]
