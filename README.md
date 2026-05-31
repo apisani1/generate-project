@@ -8,7 +8,7 @@ A Python project folder generator with support for **UV** and **Poetry** package
 
 ## Features
 
-📦 UV or Poetry for dependency management and packaging
+📦 UV or Poetry for dependency management and packaging   
 🧹 Code quality tools including  black, isort, flake8, mypy and pylint        
 📚 Sphinx based documentation with auto-generated API docs and live preview   
 ✅ Testing framework with pytest and test coverage reports   
@@ -19,7 +19,7 @@ A Python project folder generator with support for **UV** and **Poetry** package
 📋 Project structure following best practices   
   
 
-## Requirements 
+## Requirements
 
 Python 3.10+   
 Cookiecutter 2.6.0+  
@@ -170,10 +170,10 @@ generate-project generate my-lib --library
 
 The following options are available to setup a github repository for the project:
 
-| Option | Description |
-|--------|-------------|
-| `--github` | Create a private github repository for the project |
-| `--public` | Create a public github repository for the project|
+| Option | Description |   
+|--------|-------------|   
+| `--github` | Create a private github repository for the project |   
+| `--public` | Create a public github repository for the project|    
 | `--secrets` | Create repository secrets for the release management workflows |     
 
 The following repository secrets can be automatically setup: 
@@ -220,6 +220,14 @@ make release-rc           # Create release candidate
 make release-beta         # Create beta pre-release
 make release-alpha        # Create alpha pre-release
 ```
+
+Each release task bumps the version, updates `CHANGELOG.md`, writes and commits a
+`RELEASE_NOTES.md` (used as the GitHub Release body), then creates the release commit and tag.
+By default the commit message, tag message, changelog entry and release notes are generated for
+you (and opened in your editor for review). To prepare them ahead of time, drop drafts in a
+`.tmp_release_docs/` folder — `commit.txt`, `tag.txt`, `changelog.md`, `release_notes.md` — and
+any draft present is used instead of the generated text. (The older `--changes` flag is
+deprecated in favor of these drafts.)
 
 Run `make help` for a complete list of the development tasks available.
 

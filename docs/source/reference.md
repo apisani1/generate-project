@@ -73,13 +73,17 @@ These options configure the project metadata and can be saved as defaults using 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--library` | Create a library project (no CLI entry point) | Application project |
-| `--manager` | Package manager: `poetry` or `uv` | `poetry` |
+| `--manager` | Package manager: `uv` or `poetry` | `uv` |
 
-When `--manager uv` is specified:
-- Uses hatchling build backend instead of poetry-core
-- Uses PEP 621 `[project]` metadata and `[dependency-groups]` (PEP 735)
-- CI workflows use `astral-sh/setup-uv` instead of Poetry
-- `run.sh` uses `uv sync`, `uv run`, `uv build`, `uv publish`
+The default UV projects use the hatchling build backend, PEP 621 `[project]` metadata with
+`[dependency-groups]` (PEP 735), `astral-sh/setup-uv` in CI, and `uv sync`/`uv run`/`uv
+build`/`uv publish` in `run.sh`.
+
+When `--manager poetry` is specified instead:
+- Uses the poetry-core build backend
+- Uses `[tool.poetry]` metadata and dependency groups
+- CI workflows use Poetry instead of `astral-sh/setup-uv`
+- `run.sh` uses `poetry install`, `poetry run`, `poetry build`, `poetry publish`
 
 When `--library` is specified:
 - No `[project.scripts]` section is added to `pyproject.toml`
@@ -370,6 +374,33 @@ make release-alpha        # Create alpha pre-release
 ```
 
 Run `make help` for a complete list of the development tasks available.
+
+### Release Artifacts and Drafts
+
+Each release task bumps the version, updates `CHANGELOG.md`, and writes and commits a
+`RELEASE_NOTES.md` before creating the release commit and tag. The release workflow
+(`release.yml`) uses `RELEASE_NOTES.md` as the GitHub Release body when it was part of the
+tagged commit; otherwise it extracts that version's entry from `CHANGELOG.md`.
+
+By default the commit message, tag message, changelog entry and release notes are generated
+automatically and opened in your editor for review. You can instead pre-draft any of them in a
+`.tmp_release_docs/` folder:
+
+| Draft file | Overrides |
+|------------|-----------|
+| `commit.txt` | Release commit message |
+| `tag.txt` | Annotated tag message |
+| `changelog.md` | `CHANGELOG.md` entry |
+| `release_notes.md` | `RELEASE_NOTES.md` body |
+
+A draft is used only when it exists, is non-empty, and was modified more recently than the
+previous release tag; otherwise you are prompted to continue with the generated content (each
+draft is confirmed independently). The folder is git-ignored. The older `--changes` flag is
+deprecated in favor of these drafts.
+
+Each release also bumps a `?v=<version>` cache-bust parameter on the README's PyPI badge (via the
+`version_variable` list in `pyproject.toml`), so the badge image refreshes on GitHub without a
+manual post-publish commit.
 
 # Error Handling
 

@@ -83,4 +83,12 @@ Use `uv add <pkg>` to add dependencies and `uv sync` to install from lockfile. A
 <!-- FILL IN: Add project-specific gotchas as you discover them.
      Tip: Press `#` during a Claude Code session to auto-incorporate session learnings here. -->
 
+- **Release drafts**: `make release-*` → `scripts/release.py create … --release-docs` reads
+  `.tmp_release_docs/{commit.txt,tag.txt,changelog.md,release_notes.md}`. A draft is used only if
+  it exists, is non-empty, and is newer than the previous release tag; otherwise it prompts a
+  fallback to generated content (per draft). The folder is git-ignored. `--changes` is deprecated.
+- **RELEASE_NOTES.md**: Generated and committed each release. `release.yml` uses it as the GitHub
+  Release body only when it was part of the tagged commit; otherwise it extracts that version's
+  `CHANGELOG.md` entry.
+
 See @./notes for additional private information

@@ -107,8 +107,19 @@ python -c "import generate_project; print(generate_project.__file__.replace('__i
 
 ## Gotchas
 
-- **Template sync**: Three `release.yml` files must stay in sync: `.github/workflows/release.yml`,
-  `uv-template/.../release.yml`, and `poetry-template/.../release.yml`
+- **Template sync**: All GitHub workflows must stay in sync across the three `.github` folders
+  (`delete_workflow_runs.yml`, `docs.yml`, `release.yml`, `tests.yml`, `update_rtd.yml`):
+  root `.github/workflows/`, `uv-template/.../.github/workflows/`, and
+  `poetry-template/.../.github/workflows/`. When editing the template copies, mind the Jinja2
+  escaping: GitHub Actions `${{ ... }}` expressions must be written as `${{ "{{" }} ... {{ "}}" }}`
+  so cookiecutter renders them literally instead of trying to evaluate them.
+- **Release drafts**: `make release-*` → `scripts/release.py create … --release-docs` reads
+  `.tmp_release_docs/{commit.txt,tag.txt,changelog.md,release_notes.md}`. A draft is used only if
+  it exists, is non-empty, and is newer than the previous release tag; otherwise it prompts a
+  fallback to generated content (per draft). The folder is git-ignored. `--changes` is deprecated.
+- **RELEASE_NOTES.md**: Generated and committed each release. `release.yml` uses it as the GitHub
+  Release body only when it was part of the tagged commit; otherwise it extracts that version's
+  `CHANGELOG.md` entry.
 - **Package name**: Auto-derived from project name (lowercase, hyphens→underscores). Cannot differ.
 - **`--library` flag**: Removes `src/<package>/main.py` post-generation (no CLI entry point)
 - **`.` as project name**: Generates into current directory instead of creating a new dir

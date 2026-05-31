@@ -1,9 +1,9 @@
 # Generate Project 
-A Python project folder generator with support for **Poetry** and **UV** package managers. The generated folder provides everything you need to get started with a well-structured Python project, including development tasks for formatting, linting, documentation, testing, and CI/CD.
+A Python project folder generator with support for **UV** and **Poetry** package managers. The generated folder provides everything you need to get started with a well-structured Python project, including development tasks for formatting, linting, documentation, testing, and CI/CD.
 
 ## Features
 
-📦 Poetry or UV for dependency management and packaging   
+📦 UV or Poetry for dependency management and packaging   
 🧹 Code quality tools including  black, isort, flake8, mypy and pylint        
 📚 Sphinx based documentation with auto-generated API docs and live preview   
 ✅ Testing framework with pytest and test coverage reports   
@@ -93,19 +93,19 @@ generate-project generate "project-name"
 
 ## Package Manager
 
-By default, generate-project creates projects using **Poetry**. Use the `--manager` flag to select **UV** instead:
+By default, generate-project creates projects using **UV**. Use the `--manager` flag to select **Poetry** instead:
 
 | Manager | Build Backend | Dependency Format | Command |
 |---------|--------------|-------------------|---------|
-| Poetry (default) | poetry-core | `[tool.poetry.dependencies]` | `--manager poetry` |
-| UV | hatchling | `[dependency-groups]` (PEP 735) | `--manager uv` |
+| UV (default) | hatchling | `[dependency-groups]` (PEP 735) | `--manager uv` |
+| Poetry | poetry-core | `[tool.poetry.dependencies]` | `--manager poetry` |
 
 ```bash
-# Poetry project (default)
+# UV project (default)
 generate-project generate my-project
 
-# UV project
-generate-project generate my-project --manager uv
+# Poetry project
+generate-project generate my-project --manager poetry
 ```
 
 ## Project Structure
@@ -144,6 +144,23 @@ project-name/
 ```
 
   
+## Project Types
+
+By default, generate-project creates an **application** project with a CLI entry point. Use the `--library` flag to create a library project instead:
+
+```bash
+# Create an application (default)
+generate-project generate my-app
+
+# Create a library
+generate-project generate my-lib --library
+```
+
+| Project Type | CLI Entry Point | main.py | Use Case |
+|--------------|-----------------|---------|----------|
+| Application | Yes | Yes | CLI tools, scripts |
+| Library | No | No | Reusable packages, APIs |
+
 ## GitHub Repository Setup
 
 The following options are available to setup a github repository for the project:
@@ -198,6 +215,14 @@ make release-rc           # Create release candidate
 make release-beta         # Create beta pre-release
 make release-alpha        # Create alpha pre-release
 ```
+
+Each release task bumps the version, updates `CHANGELOG.md`, writes and commits a
+`RELEASE_NOTES.md` (used as the GitHub Release body), then creates the release commit and tag.
+By default the commit message, tag message, changelog entry and release notes are generated for
+you (and opened in your editor for review). To prepare them ahead of time, drop drafts in a
+`.tmp_release_docs/` folder — `commit.txt`, `tag.txt`, `changelog.md`, `release_notes.md` — and
+any draft present is used instead of the generated text. (The older `--changes` flag is
+deprecated in favor of these drafts.)
 
 Run `make help` for a complete list of the development tasks available.
 
