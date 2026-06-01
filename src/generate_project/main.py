@@ -658,6 +658,32 @@ print(Path(generate_project.main.__file__).parent / 'templates' / 'config.yaml')
 \"""
 """
 
+# Install-skills command epilog
+INSTALL_SKILLS_EPILOG = """
+What Gets Installed:
+  The release-docs Claude skill and the /release-docs command, which draft release
+  artifacts (commit message, tag message, CHANGELOG entry, release notes) under
+  .tmp_release_docs/ before you cut a release (consumed by scripts/release.py).
+    skills/release-docs/      The skill (SKILL.md, agents, helper scripts)
+    commands/release-docs.md  The /release-docs slash command
+
+Install Destinations:
+  install-skills           Installs globally into ~/.claude (available in every repo)
+  generate --install-skills  Installs into a new project's .claude/ at generation time
+  scripts/install_claude_skills.py  Installs into an existing generated repo's .claude/
+
+  Existing files are kept; pass --force to overwrite them.
+
+Examples:
+  %(prog)s                                 # Install into ~/.claude
+  %(prog)s --dry-run                       # Preview without writing anything
+  %(prog)s --force                         # Overwrite existing files
+  %(prog)s --dest ./.claude                # Install into a specific .claude directory
+
+Documentation:
+  https://generate-project.readthedocs.io/
+"""
+
 
 def print_args(**kwargs: Optional[Dict]) -> None:
     """Print the arguments for debugging."""
@@ -822,6 +848,7 @@ def main() -> None:
         description="Install the release-docs Claude skill and /release-docs command into "
         "your global ~/.claude directory (available in every repository).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=INSTALL_SKILLS_EPILOG,
     )
     install_skills_parser.add_argument(
         "--dest",
