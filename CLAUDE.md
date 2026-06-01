@@ -120,6 +120,14 @@ python -c "import generate_project; print(generate_project.__file__.replace('__i
 - **RELEASE_NOTES.md**: Generated and committed each release. `release.yml` uses it as the GitHub
   Release body only when it was part of the tagged commit; otherwise it extracts that version's
   `CHANGELOG.md` entry.
+- **Claude assets**: The `release-docs` skill + `/release-docs` command live once in
+  `src/generate_project/claude_assets/` (the single source of truth; `src/generate_project/skills.py`
+  installs them). `generate-project install-skills` installs them **globally** into `~/.claude`;
+  `generate --install-skills` installs them **into the new project's `.claude/`**. The templates also
+  ship `scripts/install_claude_skills.py` (must stay in sync across both templates) for collaborators
+  without generate-project — it copies from the installed package or, with confirmation, downloads
+  from GitHub. `claude_assets` is excluded from flake8/mypy/pylint/coverage (shipped data, not
+  package code).
 - **Package name**: Auto-derived from project name (lowercase, hyphens→underscores). Cannot differ.
 - **`--library` flag**: Removes `src/<package>/main.py` post-generation (no CLI entry point)
 - **`.` as project name**: Generates into current directory instead of creating a new dir

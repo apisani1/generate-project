@@ -402,6 +402,23 @@ Each release also bumps a `?v=<version>` cache-bust parameter on the README's Py
 `version_variable` list in `pyproject.toml`), so the badge image refreshes on GitHub without a
 manual post-publish commit.
 
+#### The release-docs Claude skill
+
+A companion **`release-docs`** Claude Code skill (and `/release-docs` command) drafts the four
+`.tmp_release_docs/` files from the diff since the previous release tag. It ships bundled with
+generate-project and can be installed three ways:
+
+| Command | Installs into | Use when |
+|---------|---------------|----------|
+| `generate-project install-skills` | `~/.claude` (global) | You want the skill available in every repository |
+| `generate-project generate <name> --install-skills` | the new project's `.claude/` | You want the skill bound to a project as you create it |
+| `python scripts/install_claude_skills.py` (in a generated repo) | the repo's `.claude/` | A collaborator cloned the repo and wants the skill locally |
+
+`install-skills` accepts `--dest`, `--force`, and `--dry-run`. The in-repo
+`scripts/install_claude_skills.py` copies from an installed `generate_project` when available and
+otherwise asks before downloading the files from GitHub (`--yes` to skip the prompt, `--ref` to
+pick a version).
+
 # Error Handling
 
 ### Common Issues

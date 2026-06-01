@@ -24,6 +24,7 @@ from dotenv import (
     load_dotenv,
 )
 from generate_project import __version__  # noqa: F401
+from generate_project.skills import install_claude_skills
 
 TOKEN_NAMES = ["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"]
 
@@ -100,6 +101,7 @@ def generate_project(
     create_secrets: bool = False,
     create_pypirc: bool = False,
     create_local_env: bool = False,
+    install_skills: bool = False,
     **kwargs: Optional[Dict],
 ) -> None:
     """Main project generation logic."""
@@ -167,6 +169,11 @@ def generate_project(
                 run_command(["poetry", "install"], extra_env={"POETRY_VIRTUALENVS_IN_PROJECT": "true"})
         except subprocess.CalledProcessError:
             print_colored(f"Warning: {package_manager} install failed", Colors.YELLOW)
+
+    # Install the release-docs Claude skill into the project's .claude/ before the initial
+    # commit, so the files are tracked if the project is committed.
+    if install_skills:
+        run_install_skills(project_dir / ".claude")
 
     # Initialize Git
     if init_git:
@@ -659,6 +666,26 @@ def print_args(**kwargs: Optional[Dict]) -> None:
         print_colored(f"  {key}: {value}", Colors.YELLOW)
 
 
+def run_install_skills(dest: Path, force: bool = False, dry_run: bool = False) -> None:
+    """Install the bundled Claude skills/commands into ``dest`` and report the result."""
+    dest = dest.expanduser()
+    installed, skipped = install_claude_skills(dest, force=force, dry_run=dry_run)
+    verb = "Would install" if dry_run else "Installed"
+    if installed:
+        print_colored(f"{verb} {len(installed)} Claude asset file(s) into {dest}:", Colors.GREEN)
+        for path in installed:
+            print(f"  + {path}")
+    if skipped:
+        print_colored(
+            f"Skipped {len(skipped)} existing file(s); pass --force to overwrite:",
+            Colors.YELLOW,
+        )
+        for path in skipped:
+            print(f"  = {path}")
+    if not installed and not skipped:
+        print_colored("No Claude assets found to install.", Colors.YELLOW)
+
+
 def main() -> None:
     # Read configuration files
     global_config_file_path = Path(__file__).parent / "templates" / "uv-template" / "cookiecutter.json"
@@ -679,7 +706,7 @@ def main() -> None:
     subparsers = parser.add_subparsers(
         dest="command",
         help="Available commands",
-        metavar="{generate,config}",
+        metavar="{generate,config,install-skills}",
     )
 
     # Create the generate subparser
@@ -743,6 +770,14 @@ def main() -> None:
         help="Create a library project instead of an application (no CLI entry point)",
     )
 
+    # Install the Claude release-docs skill into the generated project's .claude/
+    generate_parser.add_argument(
+        "--install-skills",
+        dest="install_skills",
+        action="store_true",
+        help="Install the release-docs Claude skill/command into the new project's .claude/",
+    )
+
     # Add package manager flag to generate parser
     generate_parser.add_argument(
         "--manager",
@@ -780,6 +815,26 @@ def main() -> None:
         help="Set default package manager (uv or poetry)",
     )
 
+    # Create the install-skills subparser (installs the bundled Claude assets globally)
+    install_skills_parser = subparsers.add_parser(
+        "install-skills",
+        help="Install the bundled Claude skills/commands into ~/.claude",
+        description="Install the release-docs Claude skill and /release-docs command into "
+        "your global ~/.claude directory (available in every repository).",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    install_skills_parser.add_argument(
+        "--dest",
+        dest="dest",
+        type=Path,
+        default=Path.home() / ".claude",
+        help="Target .claude directory (default: ~/.claude)",
+    )
+    install_skills_parser.add_argument("--force", dest="force", action="store_true", help="Overwrite existing files")
+    install_skills_parser.add_argument(
+        "--dry-run", dest="dry_run", action="store_true", help="Show what would be installed without writing"
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -800,6 +855,11 @@ def main() -> None:
         update_config_file(user_config_file_path, user_config, config_args)
         print_colored("Configuration updated successfully!", Colors.GREEN)
         print_colored(f"Updated file: {user_config_file_path}", Colors.GREEN)
+        sys.exit(0)
+
+    # Handle install-skills command (global install into ~/.claude by default)
+    elif args.command == "install-skills":
+        run_install_skills(args.dest, force=args.force, dry_run=args.dry_run)
         sys.exit(0)
 
     # Handle generate command

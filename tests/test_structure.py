@@ -13,7 +13,6 @@ from tests.project_structure import (
     library_context,
 )
 
-
 def path_in_output(result: Result, *paths: str) -> str:
     """Join paths with the output directory."""
     return os.path.join(result.project_path, *paths)
@@ -30,6 +29,12 @@ def test_project_structure(default_project: Result) -> None:
     assert os.path.exists(
         path_in_output(default_project, f"src/{package_name}/__init__.py")
     ), f"Missing package init file: src/{package_name}/__init__.py"
+
+
+def test_release_docs_installer_present(default_project: Result) -> None:
+    """Generated projects ship the in-repo Claude skill installer."""
+    installer = path_in_output(default_project, "scripts/install_claude_skills.py")
+    assert os.path.exists(installer), "Missing scripts/install_claude_skills.py"
 
 
 def test_src_structure(default_project: Result) -> None:

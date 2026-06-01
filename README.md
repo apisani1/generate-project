@@ -229,6 +229,12 @@ you (and opened in your editor for review). To prepare them ahead of time, drop 
 any draft present is used instead of the generated text. (The older `--changes` flag is
 deprecated in favor of these drafts.)
 
+A companion **`release-docs` Claude Code skill** (with a `/release-docs` command) can draft those
+files for you from the diff since the last release tag. Install it globally with
+`generate-project install-skills` (into `~/.claude`), opt into installing it inside a new project
+with `generate ... --install-skills`, or, in an already-generated project, run
+`python scripts/install_claude_skills.py`.
+
 Run `make help` for a complete list of the development tasks available.
 
 ## Acknowledgments

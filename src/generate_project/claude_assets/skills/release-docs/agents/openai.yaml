@@ -1,0 +1,5 @@
+interface:
+  display_name: "Release Docs"
+  short_description: "Draft commit, tag, changelog, and release-notes files under .tmp_release_docs/"
+  brand_color: "#2563EB"
+  default_prompt: "Use $release-docs to prepare release documentation drafts (commit.txt, tag.txt, changelog.md, release_notes.md) under .tmp_release_docs/ from the diff since the previous release tag."
