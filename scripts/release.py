@@ -255,16 +255,20 @@ def read_release_doc(
     description = f"{doc_path} for {doc_key.replace('_', ' ')}"
 
     if not release_docs_path.is_dir():
-        return confirm_release_doc_fallback(f"{release_docs_path} does not exist.", interactive)
+        confirm_release_doc_fallback(f"{release_docs_path} does not exist.", interactive)
+        return None
     if not doc_path.exists():
-        return confirm_release_doc_fallback(f"{description} is missing.", interactive)
+        confirm_release_doc_fallback(f"{description} is missing.", interactive)
+        return None
     content = doc_path.read_text()
     if not content.strip():
-        return confirm_release_doc_fallback(f"{description} is empty.", interactive)
+        confirm_release_doc_fallback(f"{description} is empty.", interactive)
+        return None
     if latest_tag_dt is not None:
         doc_mtime = datetime.fromtimestamp(doc_path.stat().st_mtime).astimezone()
         if doc_mtime < latest_tag_dt:
-            return confirm_release_doc_fallback(f"{description} is older than {latest_tag}.", interactive)
+            confirm_release_doc_fallback(f"{description} is older than {latest_tag}.", interactive)
+            return None
     return content
 
 
