@@ -1,4 +1,4 @@
-.PHONY: all format lint lint-mypy lint-flake8 lint-pylint test tests test-manual help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc release-beta release-alpha release-major-a release-major-b release-major-rc release-minor-a release-minor-b release-minor-rc release-micro-a release-micro-b release-micro-rc rollback venv venv-clean
+.PHONY: all manifest format lint lint-mypy lint-flake8 lint-pylint test tests test-manual help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc release-beta release-alpha release-major-a release-major-b release-major-rc release-minor-a release-minor-b release-minor-rc release-micro-a release-micro-b release-micro-rc rollback venv venv-clean
 
 ######################
 # This automation tasks were inspired by automation patterns from
@@ -84,6 +84,10 @@ lint-diff:
 # Run all linters on test files
 lint-tests:
 	@./run.sh lint:tests
+
+# Regenerate the bundled Claude asset manifest
+manifest:
+	@./run.sh manifest
 
 # Formatting
 format:

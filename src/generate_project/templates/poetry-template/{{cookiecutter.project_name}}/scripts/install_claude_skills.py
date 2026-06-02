@@ -6,9 +6,10 @@ drafts release artifacts under .tmp_release_docs/ before you cut a release (cons
 scripts/release.py via --release-docs). This script installs that skill + command into the
 repository's own .claude/ directory so it is available when working in this repo.
 
-Asset source, in order:
-  1. An installed `generate_project` package (copies its bundled assets) — no network.
-  2. Otherwise, download them from the generate-project GitHub repo (asks first).
+The set of files to install is read from a single manifest (asset_manifest.txt), never
+hardcoded here. Asset source, in order:
+  1. An installed `generate_project` package (reads its bundled manifest + copies) — no network.
+  2. Otherwise, download the manifest and the files it lists from GitHub (asks first).
 
 Usage:
   python scripts/install_claude_skills.py             # into ./.claude (asks before any download)
@@ -27,7 +28,6 @@ import urllib.request
 from pathlib import Path
 from typing import (
     Dict,
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -35,15 +35,7 @@ from typing import (
 
 REPO = "apisani1/generate-project"
 ASSETS_SUBPATH = "src/generate_project/claude_assets"
-
-# Files fetched when downloading from GitHub. The local-package path copies the whole
-# asset tree dynamically, so this list only matters for the download fallback.
-ASSET_FILES = [
-    "skills/release-docs/SKILL.md",
-    "skills/release-docs/agents/openai.yaml",
-    "skills/release-docs/scripts/find_previous_release.py",
-    "commands/release-docs.md",
-]
+MANIFEST_NAME = "asset_manifest.txt"
 
 EPILOG = """
 What Gets Installed:
@@ -52,10 +44,11 @@ What Gets Installed:
   .tmp_release_docs/ before you cut a release (consumed by scripts/release.py).
     skills/release-docs/      The skill (SKILL.md, agents, helper scripts)
     commands/release-docs.md  The /release-docs slash command
+  The exact file list comes from the asset manifest, so it stays correct as assets change.
 
 Asset Source (resolved automatically):
-  1. An installed generate_project package -- copies its bundled assets (no network).
-  2. Otherwise -- downloads the files from github.com/apisani1/generate-project
+  1. An installed generate_project package -- reads its bundled manifest, copies (no network).
+  2. Otherwise -- downloads the manifest and its files from github.com/apisani1/generate-project
      after asking for confirmation (use --yes to skip the prompt, --ref to pick a tag).
 
 Examples:
@@ -67,6 +60,11 @@ Examples:
 """
 
 
+def parse_manifest(text: str) -> List[str]:
+    """Parse manifest text into relative paths, skipping blank lines and ``#`` comments."""
+    return [line.strip() for line in text.splitlines() if line.strip() and not line.lstrip().startswith("#")]
+
+
 def local_assets_dir() -> Optional[Path]:
     """Return the bundled claude_assets dir from an installed generate_project, or None."""
     try:
@@ -75,17 +73,6 @@ def local_assets_dir() -> Optional[Path]:
         return None
     candidate = Path(generate_project.__file__).parent / "claude_assets"
     return candidate if candidate.is_dir() else None
-
-
-def iter_local(assets_dir: Path) -> Iterator[Tuple[str, Path]]:
-    """Yield (relative_path, source_file) for every bundled asset file."""
-    for sub in ("skills", "commands"):
-        base = assets_dir / sub
-        if not base.is_dir():
-            continue
-        for src in sorted(base.rglob("*")):
-            if src.is_file():
-                yield str(src.relative_to(assets_dir)), src
 
 
 def confirm_download(ref: str, assume_yes: bool) -> bool:
@@ -103,14 +90,24 @@ def confirm_download(ref: str, assume_yes: bool) -> bool:
     return answer.strip().lower() in ("y", "yes")
 
 
+def _download(url: str) -> Optional[bytes]:
+    """Fetch ``url`` and return its bytes, or None (after printing) on failure."""
+    try:
+        with urllib.request.urlopen(url) as resp:  # noqa: S310
+            return resp.read()
+    except urllib.error.URLError as exc:
+        print("error: failed to download " + url + ": " + str(exc), file=sys.stderr)
+        return None
+
+
 def install(dest: Path, force: bool, dry_run: bool, ref: str, assume_yes: bool) -> int:
-    """Install the release-docs assets into ``dest`` and report what happened.
+    """Install the manifest-listed assets into ``dest`` and report what happened.
 
     Resolves the asset source first: the bundled assets of an installed ``generate_project``
     package when available (no network), otherwise a confirmed download from GitHub at ``ref``.
-    Each asset is copied/written under ``dest``, preserving the skills/ and commands/ layout;
-    files that already exist are skipped unless ``force`` is set. When ``dry_run`` is True
-    nothing is written, only reported.
+    In both cases the file list comes from the asset manifest. Each asset is copied/written
+    under ``dest``, preserving the skills/ and commands/ layout; files that already exist are
+    skipped unless ``force`` is set. When ``dry_run`` is True nothing is written, only reported.
 
     Returns a process exit code: 0 on success, 1 if no asset source is available or a
     download fails.
@@ -121,22 +118,24 @@ def install(dest: Path, force: bool, dry_run: bool, ref: str, assume_yes: bool) 
     payloads: Dict[str, bytes] = {}
     items: List[Tuple[str, Optional[Path]]] = []
     if assets_dir is not None:
-        items = list(iter_local(assets_dir))
+        rels = parse_manifest((assets_dir / MANIFEST_NAME).read_text())
+        items = [(rel, assets_dir / rel) for rel in rels]
         source_desc = "installed generate_project (" + str(assets_dir) + ")"
     else:
         if not confirm_download(ref, assume_yes):
             print("Aborted: no asset source available.", file=sys.stderr)
             return 1
         base_url = "https://raw.githubusercontent.com/" + REPO + "/" + ref + "/" + ASSETS_SUBPATH + "/"
-        for rel in ASSET_FILES:
-            url = base_url + rel
-            try:
-                with urllib.request.urlopen(url) as resp:  # noqa: S310
-                    payloads[rel] = resp.read()
-            except urllib.error.URLError as exc:
-                print("error: failed to download " + url + ": " + str(exc), file=sys.stderr)
+        manifest_bytes = _download(base_url + MANIFEST_NAME)
+        if manifest_bytes is None:
+            return 1
+        rels = parse_manifest(manifest_bytes.decode("utf-8"))
+        for rel in rels:
+            data = _download(base_url + rel)
+            if data is None:
                 return 1
-        items = [(rel, None) for rel in ASSET_FILES]
+            payloads[rel] = data
+        items = [(rel, None) for rel in rels]
         source_desc = "github.com/" + REPO + "@" + ref
 
     installed: List[Path] = []

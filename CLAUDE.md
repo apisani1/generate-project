@@ -128,6 +128,13 @@ python -c "import generate_project; print(generate_project.__file__.replace('__i
   without generate-project — it copies from the installed package or, with confirmation, downloads
   from GitHub. `claude_assets` is excluded from flake8/mypy/pylint/coverage (shipped data, not
   package code).
+- **Asset manifest**: `claude_assets/asset_manifest.txt` is the *single* list of which asset files to
+  install — **auto-generated** from the asset tree (top-level, so it's never itself installed into
+  `.claude`). Every consumer reads it: `skills.install_claude_skills`, both templates'
+  `install_claude_skills.py` (which download it first, then the listed files), and the tests. Don't
+  hand-edit it; regenerate via `make manifest` (also run by `make format`/`make pre-commit`) →
+  `python -m generate_project.skills --write-manifest`. `tests/test_skills.py::test_manifest_is_up_to_date`
+  fails CI if it's stale, and a sibling test asserts neither installer carries a hardcoded file list.
 - **Package name**: Auto-derived from project name (lowercase, hyphens→underscores). Cannot differ.
 - **`--library` flag**: Removes `src/<package>/main.py` post-generation (no CLI entry point)
 - **`.` as project name**: Generates into current directory instead of creating a new dir

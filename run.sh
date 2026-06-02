@@ -288,8 +288,16 @@ function format:check:isort {
 }
 
 
+# Regenerate the bundled Claude asset manifest (single source of truth for the
+# release-docs skill files; verified fresh in CI by tests/test_skills.py).
+function manifest {
+    echo "Regenerating Claude asset manifest..."
+    uv run python -m generate_project.skills --write-manifest
+}
+
 # Main formatting function
 function format {
+    manifest
     format:black
     format:isort
 }
@@ -338,6 +346,9 @@ function check:ci {
 
 # Pre-commit check
 function pre:commit {
+    # Regenerate independently of format:diff, which early-returns when no .py changed
+    # (an assets-only change must still refresh the manifest).
+    manifest
     format:diff
     lint:diff
     tests
@@ -736,6 +747,7 @@ function help {
     echo "  requirements         - Export requirements.txt files"
     echo ""
     echo "Linting & Formatting:"
+    echo "  manifest             - Regenerate the bundled Claude asset manifest"
     echo "  format               - Run all formatters (applies changes)"
     echo "  format:check         - Check formatting without changes (CI)"
     echo "  format:diff          - Run formatters on changed files"
