@@ -4,10 +4,11 @@ This is the reference guide for generate-project, a command-line tool for genera
 
 ## Commands Overview
 
-generate-project provides two commands:
+generate-project provides three commands:
 
 - **generate**: Create a new Python project folder with configurable parameters
 - **config**: Configure default project parameters
+- **install-skills**: Install the bundled Claude Code commands/skill into a `.claude` directory
 
 For quick help use:
 ```bash
@@ -15,6 +16,7 @@ generate-project --help
 generate-project --version
 generate-project generate --help
 generate-project config --help
+generate-project install-skills --help
 ```
 
 ## Global Options
@@ -67,6 +69,7 @@ These options configure the project metadata and can be saved as defaults using 
 |--------|-------------|---------|
 | `--no-install` | Skip installing dependencies | Install dependencies |
 | `--no-git` | Skip Git repository initialization | Initialize Git repository |
+| `--install-skills` | Install the bundled Claude Code commands/skill into the new project's `.claude/` | Do not install |
 
 #### Project Type Options
 
@@ -273,6 +276,55 @@ generate-project config \
 
 After setting defaults, you can omit these parameters in future `generate` commands.
 
+## install-skills Command
+
+Install the Claude Code assets bundled with generate-project into a `.claude` directory. These
+assets are a set of slash commands (and one skill) that automate common maintenance tasks:
+
+| Asset | Type | What it does |
+|-------|------|--------------|
+| `/release-docs` (+ `release-docs` skill) | command + skill | Drafts the four `.tmp_release_docs/` release artifacts from the diff since the last release tag |
+| `/update-dev-env` | command | Syncs a generated repo's dev-environment files (`Makefile`, `run.sh`, workflows, …) with a released template version, preserving your customizations |
+| `/migrate-poetry-to-uv` | command | Migrates a Poetry-based generated repo to UV: converts `pyproject.toml`, swaps the lockfile, and re-syncs infra files from the UV template |
+
+### Synopsis
+
+```bash
+generate-project install-skills [OPTIONS]
+```
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--dest` | Target `.claude` directory to install into | `~/.claude` |
+| `--force` | Overwrite existing files | Keep existing files |
+| `--dry-run` | Show what would be installed without writing | — |
+
+### Where the assets can be installed
+
+There are three ways to install the bundled assets, depending on where you want them:
+
+| Command | Installs into | Use when |
+|---------|---------------|----------|
+| `generate-project install-skills` | `~/.claude` (global) | You want the commands available in every repository |
+| `generate-project generate <name> --install-skills` | the new project's `.claude/` | You want them bound to a project as you create it |
+| `python scripts/install_claude_skills.py` (in a generated repo) | the repo's `.claude/` | A collaborator cloned the repo and wants them locally |
+
+The in-repo `scripts/install_claude_skills.py` copies from an installed `generate_project` when
+available and otherwise asks before downloading the files from GitHub (`--yes` to skip the prompt,
+`--ref` to pick a version). All three read the same auto-generated asset manifest, so they install
+an identical set of files.
+
+### Examples
+
+```bash
+generate-project install-skills                    # Install globally into ~/.claude
+generate-project install-skills --dry-run          # Preview without writing anything
+generate-project install-skills --force            # Overwrite existing files
+generate-project install-skills --dest ./.claude   # Install into a specific .claude directory
+```
+
 ## Generated Project Structure
 
 The `generate` command creates a complete Python project with the following structure:
@@ -405,19 +457,11 @@ manual post-publish commit.
 #### The release-docs Claude skill
 
 A companion **`release-docs`** Claude Code skill (and `/release-docs` command) drafts the four
-`.tmp_release_docs/` files from the diff since the previous release tag. It ships bundled with
-generate-project and can be installed three ways:
-
-| Command | Installs into | Use when |
-|---------|---------------|----------|
-| `generate-project install-skills` | `~/.claude` (global) | You want the skill available in every repository |
-| `generate-project generate <name> --install-skills` | the new project's `.claude/` | You want the skill bound to a project as you create it |
-| `python scripts/install_claude_skills.py` (in a generated repo) | the repo's `.claude/` | A collaborator cloned the repo and wants the skill locally |
-
-`install-skills` accepts `--dest`, `--force`, and `--dry-run`. The in-repo
-`scripts/install_claude_skills.py` copies from an installed `generate_project` when available and
-otherwise asks before downloading the files from GitHub (`--yes` to skip the prompt, `--ref` to
-pick a version).
+`.tmp_release_docs/` files from the diff since the previous release tag, so you can review and
+tweak them instead of writing each artifact by hand. It ships bundled with generate-project
+alongside the `/update-dev-env` and `/migrate-poetry-to-uv` commands — install any of them with
+the [`install-skills` command](#install-skills-command) (globally, into a new project via
+`generate --install-skills`, or into an existing repo via `scripts/install_claude_skills.py`).
 
 # Error Handling
 

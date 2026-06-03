@@ -225,10 +225,14 @@ any draft present is used instead of the generated text. (The older `--changes` 
 deprecated in favor of these drafts.)
 
 A companion **`release-docs` Claude Code skill** (with a `/release-docs` command) can draft those
-files for you from the diff since the last release tag. Install it globally with
-`generate-project install-skills` (into `~/.claude`), opt into installing it inside a new project
-with `generate ... --install-skills`, or, in an already-generated project, run
-`python scripts/install_claude_skills.py`.
+files for you from the diff since the last release tag. It is bundled with generate-project
+alongside two more slash commands — **`/update-dev-env`** (sync a generated repo's dev-environment
+files with a released template, preserving customizations) and **`/migrate-poetry-to-uv`** (migrate
+a Poetry-based generated repo to UV). Install them globally with `generate-project install-skills`
+(into `~/.claude`), into a new project with `generate ... --install-skills`, or, in an
+already-generated project, with `python scripts/install_claude_skills.py`. See the
+[command reference](https://generate-project.readthedocs.io/en/latest/reference.html#install-skills-command)
+for details.
 
 Run `make help` for a complete list of the development tasks available.
 
