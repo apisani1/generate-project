@@ -1,5 +1,44 @@
 # Changelog
 
+## [2.1.0] - 2026-06-13
+
+### Added
+- `generate-project install-skills` command to install the bundled Claude assets (the `release-docs` skill and `/release-docs` command) globally into `~/.claude`, with `--dest`, `--force`, and `--dry-run` options.
+- `generate --install-skills` flag to install those assets into a new project's `.claude/` before the initial commit.
+- Bundled Claude assets under `src/generate_project/claude_assets/` as the single source of truth: the `release-docs` skill (SKILL.md, the `find_previous_release.py` helper, agents) plus the `/release-docs`, `/update-dev-env`, and `/migrate-poetry-to-uv` commands.
+- A templated `scripts/install_claude_skills.py` in both the UV and Poetry templates, so collaborators without generate-project can install the assets (copies from the installed package, or downloads from GitHub on confirmation).
+- Auto-generated asset manifest (`claude_assets/asset_manifest.txt`) as the single list of files to install, read by every consumer; regenerate with `make manifest`.
+- `--release-docs [DIR]` flag on `scripts/release.py create` (defaults to `.tmp_release_docs`). It reads pre-written drafts — `commit.txt`, `tag.txt`, `changelog.md`, `release_notes.md` — and uses each verbatim when it exists, is non-empty, and is newer than the previous release tag; otherwise it warns (or prompts, interactively) and falls back to generated content for that draft.
+- `RELEASE_NOTES.md`, generated and committed each release and used as the GitHub Release body when it is part of the tagged commit.
+- Per-release `?v=<version>` cache-bust on the README PyPI badge so the image refreshes on GitHub.
+
+### Changed
+- Refactored `scripts/release.py` into separate commit / tag / changelog / release-notes message builders; normalized changelog whitespace and the `### Changes` heading.
+- `make release-*` / `run.sh release:*` targets now use `--release-docs` instead of prompting for changes inline.
+- `release.yml`: the "Prepare release notes" step uses the committed `RELEASE_NOTES.md` only when it was part of the tagged commit, otherwise extracts that version's `CHANGELOG.md` entry.
+- `run.sh` `lint:diff` now honors the `[tool.mypy] exclude` regex from `pyproject.toml`, so `make pre-commit` matches `make check` linting semantics.
+- `make format` / `make pre-commit` regenerate the asset manifest.
+- `docs.yml`: grant `contents: read` and mark the PR documentation-preview comment step `continue-on-error`, so fork PRs (which get a read-only token) never fail the docs check over a cosmetic comment.
+- isort now declares `generate_project` as `known_first_party`; VS Code settings invoke pylint through the package manager; corrected the pylint flag in the root project and both templates.
+- All of the above propagated to both the UV and Poetry cookiecutter templates.
+
+### Deprecated
+- The `scripts/release.py --changes` flag; use `--release-docs` drafts instead.
+
+### Fixed
+- Release tooling now returns `None` explicitly after the release-doc fallback prompt.
+- Poetry template `run.sh` Python 3 PATH fix.
+
+### Documentation
+- Corrected the package-manager default across README and docs (UV is the default; Poetry via `--manager poetry`), documented the release workflow and release drafts, and added a Project Types section.
+- Documented the `install-skills` command and the bundled `/release-docs`, `/update-dev-env`, and `/migrate-poetry-to-uv` commands, plus the `generate --install-skills` flag, in the README and command reference.
+- Expanded the CLAUDE.md gotchas (template sync, release drafts, Claude assets, the asset manifest, and `RELEASE_NOTES.md`), and propagated the release-drafts and `RELEASE_NOTES.md` notes into both templates' `CLAUDE.md`.
+
+### Internal
+- Hardened the `version_variable` substitution regex in `scripts/release.py` and `scripts/update_versions.py` to stop at a closing `)`, so the version-stamped badge URL is rewritten correctly.
+- Excluded `claude_assets/` from flake8, mypy, pylint, and coverage (shipped data, not package code).
+- `.gitignore` now ignores `.tmp_release_docs/`.
+
 ## [2.0.0.post1] - 2026-03-09
 
 # Release v2.0.0.post1 — Documentation & Template Improvements
