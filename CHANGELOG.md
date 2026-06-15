@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.2.0] - 2026-06-15
+
+### Added
+- The release flow now regenerates the bundled Claude asset manifest
+  (`claude_assets/asset_manifest.txt`) and includes any change in the release
+  commit, guaranteeing a released package never ships a stale manifest.
+
+### Changed
+- `scripts/release.py` now guards the `generate_project.skills` import with
+  `try`/`except`, making manifest regeneration a no-op in generated projects
+  (which lack the module) so the same `release.py` can be shared verbatim across
+  the root repo and both templates.
+- `run.sh`: manifest regeneration moved from the `format` target to `check` (it
+  is still refreshed by pre-commit and the release flow).
+
+### Security
+- Poetry template documentation requirements: pin `urllib3>=1.26.19`,
+  `zipp>=3.19.1`, `idna>=3.15`, and `pygments>=2.20.0` (via Snyk) to avoid known
+  vulnerabilities in transitive documentation dependencies.
+
 ## [2.1.0] - 2026-06-13
 
 ### Added
