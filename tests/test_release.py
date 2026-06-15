@@ -23,6 +23,7 @@ from scripts.release import (
     create_tag_message,
     extract_changes_section,
     read_release_doc,
+    regenerate_asset_manifest,
     update_changelog,
     update_version_files,
 )
@@ -532,3 +533,47 @@ class TestUpdateVersionFiles:
 
         backed_up = {path: content for path, content in state.files_backup}
         assert backed_up["badges.md"] == self.BADGES
+
+
+# ── regenerate_asset_manifest unit tests ─────────────────────────────────────
+
+
+class TestRegenerateAssetManifest:
+    """Tests for regenerate_asset_manifest (release-time manifest refresh)."""
+
+    def test_refreshes_stale_manifest_and_backs_up_original(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        manifest = tmp_path / "asset_manifest.txt"
+        manifest.write_text("# stale\nskills/old/SKILL.md\n")
+
+        def fake_write_manifest() -> None:
+            manifest.write_text("# fresh\nskills/new/SKILL.md\n")
+
+        monkeypatch.setattr("scripts.release.manifest_path", lambda: manifest)
+        monkeypatch.setattr("scripts.release.write_manifest", fake_write_manifest)
+
+        state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
+        regenerate_asset_manifest(state)
+
+        # The manifest is rewritten with the fresh content ...
+        assert manifest.read_text() == "# fresh\nskills/new/SKILL.md\n"
+        # ... and the stale original is registered for rollback.
+        backed_up = {path: content for path, content in state.files_backup}
+        assert backed_up[str(manifest)] == "# stale\nskills/old/SKILL.md\n"
+
+    def test_noop_when_already_current(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        manifest = tmp_path / "asset_manifest.txt"
+        current = "# fresh\nskills/new/SKILL.md\n"
+        manifest.write_text(current)
+
+        monkeypatch.setattr("scripts.release.manifest_path", lambda: manifest)
+        monkeypatch.setattr("scripts.release.write_manifest", lambda: manifest.write_text(current))
+
+        state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
+        regenerate_asset_manifest(state)
+
+        # Content is unchanged, and the (unchanged) original is still backed up for rollback.
+        assert manifest.read_text() == current
+        backed_up = {path: content for path, content in state.files_backup}
+        assert backed_up[str(manifest)] == current

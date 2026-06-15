@@ -21,6 +21,17 @@ from packaging.version import (
     Version,
 )
 
+try:
+    from generate_project.skills import (
+        manifest_path,
+        write_manifest,
+    )
+except ImportError:
+    # generate_project.skills only exists in the generator repo itself. In projects
+    # generated from this template it is absent, so manifest regeneration becomes a
+    # no-op and this script can be shared verbatim across both.
+    manifest_path = None
+    write_manifest = None
 
 logging.basicConfig(
     level=logging.CRITICAL,
@@ -122,6 +133,24 @@ class RollbackState:
             os.remove(self.PICKLE_FILE)
 
 
+def regenerate_asset_manifest(state: RollbackState) -> None:
+    """Regenerate the bundled Claude asset manifest so every release ships a
+    manifest in sync with the asset tree. Registered for rollback.
+
+    No-op when ``generate_project.skills`` is unavailable (e.g. in projects
+    generated from this template), so this script can be shared verbatim."""
+    if manifest_path is None or write_manifest is None:
+        return
+    path = manifest_path()
+    original = path.read_text() if path.exists() else None
+    state.add_to_backup([(str(path), original)])
+    write_manifest()
+    if path.read_text() != original:
+        print(f"-Regenerated stale asset manifest: {path}")
+    else:
+        print("-Asset manifest already up to date")
+
+
 def create_release(
     release_type: ReleaseType,
     prerelease_type: Optional[PrereleaseType] = None,
@@ -177,6 +206,7 @@ def create_release(
         date = time_stamp.strftime("%Y-%m-%d")
         current_version = get_current_version(project_file)
         state = RollbackState(time_stamp, current_version)
+        regenerate_asset_manifest(state)
         new_version = bump_version(current_version, release_type, prerelease_type, interactive)
         update_version_files(project_file, new_version, state)
         release_docs_path = Path(release_docs) if release_docs else None
@@ -188,7 +218,9 @@ def create_release(
         changelog_entry = update_changelog(
             changelog_file, date, new_version, commit_message, state, interactive, changelog_doc
         )
-        release_notes_doc = read_release_doc(release_docs_path, "release_notes", latest_tag, latest_tag_dt, interactive)
+        release_notes_doc = read_release_doc(
+            release_docs_path, "release_notes", latest_tag, latest_tag_dt, interactive
+        )
         create_release_notes(release_notes_file, new_version, changelog_entry, state, interactive, release_notes_doc)
         create_commit(new_version, commit_message)
         create_tag(new_version, tag_message)
@@ -838,7 +870,8 @@ def main() -> None:
 
         parent_parser = argparse.ArgumentParser(add_help=False)
         parent_parser.add_argument(
-            "--log", "-l",
+            "--log",
+            "-l",
             nargs="?",
             const="",
             default=None,
@@ -909,7 +942,9 @@ def main() -> None:
             if success:
                 print(f"Successfully rolled back to {state.current_version}")
             else:
-                print(f"Warning: Rollback to {state.current_version} was only partial. Manual intervention may be required.")
+                print(
+                    f"Warning: Rollback to {state.current_version} was only partial. Manual intervention may be required."
+                )
             print("Please review the changes: CHANGLOG.md entry, version files, latest commit and latest tag.")
 
     except Exception as e:
