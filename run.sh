@@ -297,7 +297,6 @@ function manifest {
 
 # Main formatting function
 function format {
-    manifest
     format:black
     format:isort
 }
@@ -331,6 +330,7 @@ function format:tests {
 # Combined check
 function check {
     # Note: This applies formatting (for local development)
+    manifest
     install:all
     format
     lint
