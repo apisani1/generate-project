@@ -43,7 +43,7 @@ def _iter_assets(assets_dir: Path) -> Iterator[Tuple[Path, Path]]:
         if not base.is_dir():
             continue
         for src in sorted(base.rglob("*")):
-            if src.is_file():
+            if src.is_file() and not any(part.startswith(".") for part in src.parts):
                 yield src.relative_to(assets_dir), src
 
 

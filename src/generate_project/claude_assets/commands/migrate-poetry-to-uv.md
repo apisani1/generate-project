@@ -126,6 +126,7 @@ fetch + substitute variables → read the current file → merge → write.
 |------|------------------|
 | `run.sh` | **Diff-and-Merge.** The template version carries the `poetry … → uv …` command swaps and drops the Poetry `python` PATH shim. Preserve project-specific shims, `run:*`/`mcp-*` commands, custom pytest markers, and the `--cov=src/<package_name>` argument. |
 | `Makefile` | **Diff-and-Merge.** Preserve custom `run-*`/`test-*` targets and any project-specific tooling targets (insert them in a separated block before `help`). |
+| `docs/Makefile` | **Diff-and-Merge.** The template version swaps the three Sphinx invocations from `poetry run … → uv run …` (`sphinx-build`, `sphinx-apidoc`, `sphinx-autobuild`). Preserve any custom Sphinx targets the user added and the `PACKAGEDIR = ../src/<package_name>` value. |
 | `.github/workflows/tests.yml` | **Diff-and-Merge.** Preserve "Install system dependencies" steps, custom `run.sh` command names, extra exit-code clauses (e.g. `|| [ $? -eq 5 ]`), and project-only env/secrets. |
 | `.github/workflows/docs.yml` | **Diff-and-Merge.** Preserve "Install system dependencies" steps. |
 | `.github/workflows/release.yml` | **Diff-and-Merge.** Preserve release-type detection, TestPyPI verification, ReadTheDocs polling, and any extra notify/validate steps. |
