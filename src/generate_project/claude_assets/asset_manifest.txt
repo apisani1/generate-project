@@ -2,6 +2,8 @@
 commands/migrate-poetry-to-uv.md
 commands/release-docs.md
 commands/update-dev-env.md
+skills/generate-codex-assets/SKILL.md
+skills/generate-codex-assets/scripts/generate_codex_assets.py
 skills/release-docs/SKILL.md
 skills/release-docs/agents/openai.yaml
 skills/release-docs/scripts/find_previous_release.py
