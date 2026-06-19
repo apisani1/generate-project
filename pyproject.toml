@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "generate-project"
-version = "2.2.0"
+version = "2.3.0"
 description = "A Python project generator using cookiecutter templates"
 authors = [{ name = "Antonio Pisani", email = "antonio.pisani@gmail.com" }]
 readme = "README.md"

@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.3.0] - 2026-06-19
+
+### Added
+- New **`generate-codex-assets`** Codex skill that installs generate-project
+  maintenance skills (and optionally prompt wrappers) into Codex from the same
+  `asset_manifest.txt` used by the Claude installers. Resolves assets from a
+  local checkout, an installed package, or GitHub (with user consent).
+  Supports `--dry-run`, `--force`, `--yes`, `--ref`, and `--prompts` flags.
+  Manifest-driven — no hardcoded skill names.
+
+### Fixed
+- Asset manifest generator (`skills.py`) now excludes hidden directories and
+  `__pycache__` entries from the manifest to avoid shipping non-asset files.
+
+### Changed
+- All `make release-*` targets now support an `ARGS` variable that is forwarded
+  to `run.sh` and on to `scripts/release.py`
+  (e.g. `make release-minor ARGS="--no-push"`).
+
+### Internal
+- ReadTheDocs release step in `.github/workflows/release.yml` (root and both
+  templates) overhauled: adds an explicit sync call before version activation,
+  waits 20 s for sync to complete, broadens the HTTP success check to any 2xx
+  response, triggers explicit builds for both the new tag and `latest`, and
+  emits a conditional step-summary line reflecting actual RTD outcome.
+
 ## [2.2.0] - 2026-06-15
 
 ### Added

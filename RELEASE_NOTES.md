@@ -1,27 +1,39 @@
-# generate-project 2.2.0
+# generate-project 2.3.0
 
-This release makes the bundled Claude asset manifest self-maintaining at release
-time and lets a single `release.py` be shared across the generator and its
-templates, plus a few dependency security pins for the Poetry template docs.
+This release adds a Codex bootstrap skill that mirrors the existing Claude skill
+installer for Codex users, fixes a manifest-generation edge case, and improves
+the release tooling ergonomics and CI reliability.
 
 ## Added
-- **Manifest auto-regeneration on release.** `scripts/release.py` now regenerates
-  the bundled Claude asset manifest (`claude_assets/asset_manifest.txt`) and folds
-  any change into the release commit, so a published package can never ship a
-  manifest that's out of sync with the asset tree.
+
+- **`generate-codex-assets` Codex skill.** A new manifest-driven skill that
+  installs generate-project's maintenance skills (and optionally prompt wrappers)
+  into Codex from the same `asset_manifest.txt` used by `install-skills`. It
+  resolves assets from a local checkout, an installed package, or GitHub (with
+  explicit user confirmation). Flags: `--dry-run`, `--force`, `--yes`, `--ref`,
+  `--prompts`. Skill names are never hardcoded — the manifest decides what ships.
+
+## Fixed
+
+- **Asset manifest excludes hidden directories and `__pycache__`.**
+  `skills.py`'s manifest generator now skips any file whose path contains a
+  hidden directory component or `__pycache__`, preventing stray non-asset files
+  from appearing in the manifest.
 
 ## Changed
-- **One shared `release.py`.** The `generate_project.skills` import is now optional
-  (`try`/`except`), so manifest regeneration cleanly no-ops in generated projects
-  that don't have the module — letting the root repo and both templates use a
-  byte-identical `release.py`.
-- **`run.sh`:** manifest regeneration moved from `format` to `check` (pre-commit
-  and the release flow still keep it fresh).
 
-## Security
-- The Poetry template's `docs/requirements.txt` now pins `urllib3>=1.26.19`,
-  `zipp>=3.19.1`, `idna>=3.15`, and `pygments>=2.20.0` (Snyk) to avoid known
-  vulnerabilities in transitive documentation dependencies.
+- **`ARGS` forwarding in `make release-*` targets.** All Makefile release targets
+  now accept an `ARGS` variable that is passed through `run.sh` to
+  `scripts/release.py`. Example: `make release-minor ARGS="--no-push"`.
+
+## Internal / CI
+
+- ReadTheDocs step in the release workflow (root and both templates) now:
+  explicitly syncs versions before activation, waits 20 s for the sync to settle,
+  accepts any 2xx HTTP response (not just 204), triggers builds for both the
+  newly released tag and `latest`, and reports actual RTD outcome in the job
+  summary.
 
 ## Upgrade notes
+
 No breaking changes — upgrading is safe.
