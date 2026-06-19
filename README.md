@@ -239,6 +239,14 @@ already-generated project, with `python scripts/install_claude_skills.py`. See t
 [command reference](https://generate-project.readthedocs.io/en/latest/reference.html#install-skills-command)
 for details.
 
+Codex users can install the bundled **`generate-codex-assets`** bootstrap skill, then ask Codex to
+generate Codex skills from the same manifest-listed source files. From this repository, copy
+`src/generate_project/claude_assets/skills/generate-codex-assets/` into `.agents/skills/` or
+`~/.agents/skills/`. From a generated repository, first run `python scripts/install_claude_skills.py`
+to fetch the bundled assets, then copy `.claude/skills/generate-codex-assets/` into Codex's skills
+folder. The bootstrap helper reads `asset_manifest.txt` locally or from GitHub, so new skills and
+commands do not need a second hardcoded file list.
+
 Run `make help` for a complete list of the development tasks available.
 
 ## Acknowledgments

@@ -7,6 +7,7 @@ scripts carry no duplicate hardcoded list.
 """
 
 import importlib.util
+import sys
 from pathlib import Path
 
 from generate_project.skills import (
@@ -21,13 +22,17 @@ from generate_project.skills import (
 REQUIRED_ANCHORS = {
     "skills/release-docs/SKILL.md",
     "commands/release-docs.md",
+    "skills/generate-codex-assets/SKILL.md",
+    "skills/generate-codex-assets/scripts/generate_codex_assets.py",
 }
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "src" / "generate_project" / "templates"
+CLAUDE_ASSETS_DIR = Path(__file__).resolve().parent.parent / "src" / "generate_project" / "claude_assets"
 INSTALLER_PATHS = [
     TEMPLATES_DIR / "uv-template" / "{{cookiecutter.project_name}}" / "scripts" / "install_claude_skills.py",
     TEMPLATES_DIR / "poetry-template" / "{{cookiecutter.project_name}}" / "scripts" / "install_claude_skills.py",
 ]
+CODEX_GENERATOR_PATH = CLAUDE_ASSETS_DIR / "skills" / "generate-codex-assets" / "scripts" / "generate_codex_assets.py"
 
 
 def _load_installer(path: Path):
@@ -36,6 +41,21 @@ def _load_installer(path: Path):
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    return module
+
+
+def _load_codex_generator():
+    """Import the Codex asset generator script by file path."""
+    spec = importlib.util.spec_from_file_location("generate_codex_assets", CODEX_GENERATOR_PATH)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    old_dont_write_bytecode = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = old_dont_write_bytecode
     return module
 
 
@@ -124,3 +144,61 @@ def test_installers_are_identical() -> None:
     """The two template installer copies must stay byte-identical."""
     contents = {path.read_bytes() for path in INSTALLER_PATHS}
     assert len(contents) == 1, "uv-template and poetry-template install_claude_skills.py have diverged"
+
+
+def test_codex_generator_uses_manifest_for_skills_and_prompts(tmp_path: Path) -> None:
+    """Codex generation is driven by manifest structure, not by known asset names."""
+    assets = tmp_path / "claude_assets"
+    skill = assets / "skills" / "example-skill"
+    command = assets / "commands"
+    skill.mkdir(parents=True)
+    command.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: example-skill\ndescription: Example\n---\n\nDo it.\n")
+    (skill / "helper.txt").write_text("helper\n")
+    (command / "example-command.md").write_text(
+        '---\ndescription: Example command\nargument-hint: "[value]"\n---\n\nUse $ARGUMENTS.\n'
+    )
+    (assets / "asset_manifest.txt").write_text(
+        "\n".join(
+            [
+                "# generated",
+                "skills/example-skill/SKILL.md",
+                "skills/example-skill/helper.txt",
+                "commands/example-command.md",
+                "",
+            ]
+        )
+    )
+
+    generator = _load_codex_generator()
+    source, reports = generator.install_from_assets(
+        assets,
+        tmp_path / ".agents" / "skills",
+        include_prompts=True,
+        prompt_dest=tmp_path / ".codex" / "prompts",
+    )
+
+    assert "local assets" in source.description
+    assert [report.kind for report in reports] == ["Codex skill", "Codex prompt"]
+    assert (tmp_path / ".agents" / "skills" / "example-skill" / "SKILL.md").read_text().endswith("Do it.\n")
+    assert (tmp_path / ".agents" / "skills" / "example-skill" / "helper.txt").read_text() == "helper\n"
+    assert (tmp_path / ".codex" / "prompts" / "example-command.md").read_text().endswith("Use $ARGUMENTS.\n")
+
+
+def test_codex_generator_skips_existing_without_force(tmp_path: Path) -> None:
+    assets = tmp_path / "claude_assets"
+    skill = assets / "skills" / "example-skill"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("SOURCE\n")
+    (assets / "asset_manifest.txt").write_text("skills/example-skill/SKILL.md\n")
+    dest = tmp_path / ".agents" / "skills"
+
+    generator = _load_codex_generator()
+    generator.install_from_assets(assets, dest)
+    installed_file = dest / "example-skill" / "SKILL.md"
+    installed_file.write_text("LOCAL EDIT\n")
+    _, reports = generator.install_from_assets(assets, dest)
+
+    assert reports[0].installed == []
+    assert reports[0].skipped == [installed_file]
+    assert installed_file.read_text() == "LOCAL EDIT\n"
