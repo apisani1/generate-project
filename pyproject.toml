@@ -130,8 +130,8 @@ radon-max-cc = 15
 
 [tool.mypy]
 exclude = [
-    '^tests/test.*\.py$',
-    '^docs/.*\.py$',
+    '^tests/',
+    '^docs/',
     '{{cookiecutter.project_name}}',
     'templates/.*/hooks/',
     'claude_assets',

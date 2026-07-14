@@ -110,7 +110,7 @@ exclude = ["docs", "tests", ".venv", ".git", "__pycache__", "build", "dist"]
 radon-max-cc = 15
 
 [tool.mypy]
-exclude = '^(tests\/test.*\.py|docs\/.*\.py)$'
+exclude = '^(tests|docs)/'
 python_version = "{{ cookiecutter.python_min_version }}"
 warn_unused_configs = true
 disallow_untyped_defs = true
