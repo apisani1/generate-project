@@ -8,7 +8,6 @@ import pytest
 from pytest_cookies.plugin import Result
 from tests.conftest import inside_dir
 
-
 def test_makefile_exists(default_project: Result) -> None:
     """Test that the Makefile exists."""
     assert os.path.exists(os.path.join(default_project.project_path, "Makefile"))
@@ -22,7 +21,7 @@ def test_makefile_help(default_project: Result) -> None:
 
             # Check that common targets are listed in help
             help_text = result.stdout
-            expected_targets = ["install", "format", "lint", "test", "docs", "build", "publish"]
+            expected_targets = ["install", "format", "lint", "run", "test", "docs", "build", "publish"]
             for target in expected_targets:
                 assert target in help_text, f"Target '{target}' not found in make help"
         except subprocess.CalledProcessError as e:

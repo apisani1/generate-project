@@ -6,8 +6,10 @@ import subprocess
 import pytest
 
 from pytest_cookies.plugin import Result
-from tests.project_structure import application_context, custom_context
-
+from tests.project_structure import (
+    application_context,
+    custom_context,
+)
 
 def test_project_generation(default_project: Result) -> None:
     """Test that project is generated and renders correctly."""
@@ -73,3 +75,22 @@ def test_library_has_no_scripts_section(library_project: Result) -> None:
     with open(pyproject_path) as f:
         content = f.read()
     assert "[project.scripts]" not in content, "Library should not have [project.scripts]"
+
+
+def test_library_example_is_valid_python(library_project: Result) -> None:
+    """Test that the rendered examples/main.py compiles (default_project drops examples/)."""
+    example_path = os.path.join(library_project.project_path, "examples/main.py")
+    try:
+        subprocess.check_output(["python", "-m", "py_compile", example_path], stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        pytest.fail(f"Python syntax error in {example_path}: {e.output}")
+
+
+def test_poetry_run_uses_poetry(default_project: Result) -> None:
+    """Test that the Poetry template's run function invokes poetry, not uv."""
+    run_sh_path = os.path.join(default_project.project_path, "run.sh")
+    with open(run_sh_path) as f:
+        content = f.read()
+
+    project_name = os.path.basename(default_project.project_path)
+    assert f'poetry run {project_name} "$@"' in content, "Poetry template should run the console script via poetry"

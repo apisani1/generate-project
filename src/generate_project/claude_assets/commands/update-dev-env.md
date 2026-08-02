@@ -199,6 +199,12 @@ Typical project-specific additions to preserve:
 
 Insert preserved custom targets in a clearly separated block before the `help` target.
 
+**Exception — the `run` target.** `run` is now template-owned and must be taken from the
+template verbatim (`@./run.sh run $(ARGS)`). If the project has a customized `run` target,
+do not preserve it in place: move its command into an executable `scripts/run.sh`, which the
+template-owned `run` function prefers over its built-in defaults. Report this migration in
+the summary.
+
 ---
 
 ### `run.sh`
@@ -212,6 +218,11 @@ Typical project-specific sections to preserve:
 - The `--cov=<package_name>` argument in coverage commands
 - Any project-specific run commands (`run:*`, `mcp-*`, etc.) not present in the template
 - Any Jupyter kernel setup functions
+
+**Exception — the `run` function.** Take the template's `run` function verbatim; it dispatches
+to `scripts/run.sh` → console script → `examples/main.py`. If the project has a customized
+`run` function, move its command into an executable `scripts/run.sh` instead of preserving the
+customization, and report the migration in the summary.
 
 ---
 

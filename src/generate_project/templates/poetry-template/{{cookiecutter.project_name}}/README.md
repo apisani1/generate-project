@@ -53,3 +53,17 @@ result = example.run()
 print(result)
 ```
 {% endif %}
+## Development
+
+```bash
+make install-dev          # Install all development dependencies
+make run                  # Run the {% if cookiecutter.project_type == "application" %}application{% else %}example in examples/main.py{% endif %}
+make run ARGS="--help"    # Run with arguments
+make pre-commit           # Format and lint changed files
+make test                 # Run the test suite
+make help                 # List every available target
+```
+
+To change how `make run` starts this project, create an executable `scripts/run.sh`; it takes
+precedence over the built-in defaults and is not overwritten by dev-environment syncs.
+

@@ -136,7 +136,7 @@ def test_makefile_content(default_project: Result) -> None:
         makefile_content = f.read()
 
     # Check for common make targets
-    expected_targets = ["install", "format", "lint", "test", "docs", "build", "publish"]
+    expected_targets = ["install", "format", "lint", "run", "test", "docs", "build", "publish"]
 
     for target in expected_targets:
         assert re.search(rf"{target}\s*:", makefile_content), f"Missing '{target}' target in Makefile"
@@ -180,3 +180,26 @@ def test_library_has_no_main_py(library_project: Result) -> None:
     package_name = library_context["project_name"].replace("-", "_").lower()
     main_py_path = path_in_output(library_project, f"src/{package_name}/main.py")
     assert not os.path.exists(main_py_path), "Library should not have main.py"
+
+
+def test_library_has_examples(library_project: Result) -> None:
+    """Test that library projects keep the example that 'make run' falls back to."""
+    example_path = path_in_output(library_project, "examples/main.py")
+    assert os.path.exists(example_path), "Library should have examples/main.py"
+
+
+def test_application_has_no_examples(application_project: Result) -> None:
+    """Test that application projects drop examples/ in favour of the console script."""
+    examples_dir = path_in_output(application_project, "examples")
+    assert not os.path.exists(examples_dir), "Application should not have an examples/ directory"
+
+
+def test_run_target_dispatch_order(default_project: Result) -> None:
+    """Test that run.sh checks the per-repo escape hatch before the built-in defaults."""
+    with open(path_in_output(default_project, "run.sh")) as f:
+        run_sh = f.read()
+
+    escape_hatch = run_sh.index('if [ -x "$THIS_DIR/scripts/run.sh" ]')
+    entry_point = run_sh.index('if [ -f "$THIS_DIR/src/')
+    example = run_sh.index('if [ -f "$THIS_DIR/examples/main.py" ]')
+    assert escape_hatch < entry_point < example, "run.sh must try scripts/run.sh, then main.py, then examples/"

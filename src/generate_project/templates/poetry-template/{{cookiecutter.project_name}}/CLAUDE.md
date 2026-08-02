@@ -29,6 +29,18 @@ make pre-commit           # Format and lint only on changed files
 
 ```
 
+### Running
+```bash
+make run                  # Run the app, or an example of the library
+make run ARGS="--help"    # Run with arguments
+```
+
+`make run` dispatches in order: `scripts/run.sh` if it exists and is executable, then the
+console script entry point if `src/{{ cookiecutter.package_name }}/main.py` exists, then
+`examples/main.py`. To customize how this project starts, create an executable
+`scripts/run.sh` — that file is not owned by the template, so it survives dev-environment
+syncs. Do not hand-edit the `run` function in `run.sh` or the `run` target in the `Makefile`.
+
 ### Testing
 ```bash
 make test                 # Run all tests

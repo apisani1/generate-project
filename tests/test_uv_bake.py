@@ -11,7 +11,6 @@ from tests.project_structure import (
     uv_custom_context,
 )
 
-
 def test_uv_project_generation(uv_default_project: Result) -> None:
     """Test that UV project is generated and renders correctly."""
     assert uv_default_project.exit_code == 0
@@ -124,6 +123,28 @@ def test_uv_library_has_no_main_py(uv_library_project: Result) -> None:
     package_name = uv_library_context["project_name"].replace("-", "_").lower()
     main_py_path = os.path.join(uv_library_project.project_path, f"src/{package_name}/main.py")
     assert not os.path.exists(main_py_path), "Library should not have main.py"
+
+
+def test_uv_library_has_examples(uv_library_project: Result) -> None:
+    """Test that UV library projects keep the example that 'make run' falls back to."""
+    example_path = os.path.join(uv_library_project.project_path, "examples/main.py")
+    assert os.path.exists(example_path), "Library should have examples/main.py"
+
+
+def test_uv_application_has_no_examples(uv_application_project: Result) -> None:
+    """Test that UV application projects drop examples/ in favour of the console script."""
+    examples_dir = os.path.join(uv_application_project.project_path, "examples")
+    assert not os.path.exists(examples_dir), "Application should not have an examples/ directory"
+
+
+def test_uv_run_uses_uv(uv_default_project: Result) -> None:
+    """Test that the UV template's run function invokes uv, not poetry."""
+    run_sh_path = os.path.join(uv_default_project.project_path, "run.sh")
+    with open(run_sh_path) as f:
+        content = f.read()
+
+    project_name = os.path.basename(uv_default_project.project_path)
+    assert f'uv run {project_name} "$@"' in content, "UV template should run the console script via uv"
 
 
 def test_uv_project_structure(uv_default_project: Result) -> None:

@@ -29,6 +29,12 @@ make pre-commit           # Format and lint only on changed files
 
 ```
 
+### Running
+```bash
+make run                  # Run the generate-project CLI (same as `uv run generate-project`)
+make run ARGS="--help"    # Run with arguments
+```
+
 ### Testing
 ```bash
 make test                 # Run all tests
@@ -135,6 +141,16 @@ python -c "import generate_project; print(generate_project.__file__.replace('__i
   hand-edit it; regenerate via `make manifest` (also run by `make format`/`make pre-commit`) →
   `python -m generate_project.skills --write-manifest`. `tests/test_skills.py::test_manifest_is_up_to_date`
   fails CI if it's stale, and a sibling test asserts neither installer carries a hardcoded file list.
+- **`make run`**: `run.sh`'s `run` function dispatches in order — (1) `scripts/run.sh` if present and
+  executable, (2) the console script if `src/<pkg>/main.py` exists (applications), (3)
+  `examples/main.py` (libraries), (4) guidance message + exit 1. Steps 2–3 are *filesystem checks,
+  not Jinja conditionals*, so `run.sh` renders identically for both project types. `scripts/run.sh`
+  is the per-repo escape hatch: it is not shipped by the template and is never re-synced, so
+  per-project run logic belongs there rather than in the `run` function or the `Makefile` target.
+- **`examples/`**: Shipped by both templates but deleted for applications by the post-gen hook
+  (the mirror image of how `src/<pkg>/main.py` is deleted for libraries). It sits outside
+  `get:python:files`, so it is not linted or formatted, and outside hatchling's `packages`, so it
+  is not published.
 - **Package name**: Auto-derived from project name (lowercase, hyphens→underscores). Cannot differ.
 - **`--library` flag**: Removes `src/<package>/main.py` post-generation (no CLI entry point)
 - **`.` as project name**: Generates into current directory instead of creating a new dir

@@ -375,6 +375,39 @@ function pre:commit {
 }
 
 ######################
+# RUN
+######################
+
+# Run the application, or an example of the library
+function run {
+    # Per-repo escape hatch: not owned by the template, never re-synced
+    if [ -x "$THIS_DIR/scripts/run.sh" ]; then
+        exec "$THIS_DIR/scripts/run.sh" "$@"
+    fi
+
+    # Application: use the console script entry point
+    if [ -f "$THIS_DIR/src/generate_project/main.py" ]; then
+        uv run generate-project "$@"
+        return
+    fi
+
+    # Library: run the bundled example
+    if [ -f "$THIS_DIR/examples/main.py" ]; then
+        uv run python "$THIS_DIR/examples/main.py" "$@"
+        return
+    fi
+
+    echo "Nothing to run."
+    echo "Create an executable scripts/run.sh with the command for this project, e.g.:"
+    echo ""
+    echo "  #!/usr/bin/env bash"
+    echo "  uv run uvicorn generate_project.server:app --reload"
+    echo ""
+    echo "  chmod +x scripts/run.sh"
+    return 1
+}
+
+######################
 # TESTING
 ######################
 
@@ -778,6 +811,9 @@ function help {
     echo "  check                - Run format + lint + test (applies changes)"
     echo "  check:ci             - Run format check + lint + test (CI)"
     echo "  pre:commit           - Run format and lint on changed files"
+    echo ""
+    echo "Run:"
+    echo "  run [args]           - Run the app, or an example of the library"
     echo ""
     echo "Testing:"
     echo "  tests [file] [args]   - Run tests"
