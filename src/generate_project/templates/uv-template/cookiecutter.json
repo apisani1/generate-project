@@ -8,6 +8,7 @@
     "description": "A short description of the project",
     "python_min_version": "3.10",
     "project_type": "application",
+    "include_supacode": "no",
     "autodoc_mock_imports": "",
     "complex_mock_modules": "",
     "google_analytics_id": ""

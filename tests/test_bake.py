@@ -86,6 +86,26 @@ def test_library_example_is_valid_python(library_project: Result) -> None:
         pytest.fail(f"Python syntax error in {example_path}: {e.output}")
 
 
+def test_poetry_keeps_the_venv_in_project(default_project: Result) -> None:
+    """Without this, Poetry uses its global cache and the worktree venv handling is a no-op."""
+    run_sh_path = os.path.join(default_project.project_path, "run.sh")
+    with open(run_sh_path) as f:
+        content = f.read()
+
+    assert "export POETRY_VIRTUALENVS_IN_PROJECT=true" in content
+
+
+def test_poetry_supacode_json_matches_uv(supacode_project: Result) -> None:
+    """Both templates must ship byte-identical Supacode worktree config."""
+    poetry_config = os.path.join(supacode_project.project_path, "supacode.json")
+    with open(poetry_config) as f:
+        content = f.read()
+
+    assert '"setupScript" : "./run.sh worktree:setup"' in content
+    assert '"archiveScript" : "./run.sh worktree:archive"' in content
+    assert '"deleteScript" : "./run.sh worktree:delete"' in content
+
+
 def test_poetry_run_uses_poetry(default_project: Result) -> None:
     """Test that the Poetry template's run function invokes poetry, not uv."""
     run_sh_path = os.path.join(default_project.project_path, "run.sh")

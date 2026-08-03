@@ -67,3 +67,15 @@ make help                 # List every available target
 To change how `make run` starts this project, create an executable `scripts/run.sh`; it takes
 precedence over the built-in defaults and is not overwritten by dev-environment syncs.
 
+### Git worktrees
+
+```bash
+make worktree-setup       # Prepare a freshly created worktree
+make worktree-archive     # Tear down a worktree before archiving
+make worktree-delete      # Guardrail + teardown before deleting a worktree
+```
+
+`make worktree-delete` refuses to run when the worktree has uncommitted changes, commits that
+exist on no other ref, or stashes on its branch — override with `SUPACODE_FORCE_DELETE=1`. Add
+project-specific teardown in an executable `scripts/worktree-archive.sh` (or `-setup`/`-delete`).
+

@@ -34,9 +34,6 @@ coverage.xml
 !.vscode/extensions.json
 *.code-workspace
 
-#Supacode
-supacode.json
-
 # Claude
 .claude/*
 

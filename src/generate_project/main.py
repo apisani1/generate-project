@@ -748,7 +748,7 @@ def main() -> None:
     generate_parser.add_argument("project_name", help="Name of the project to create")
 
     # Add project configuration arguments to generate parser (exclude computed/flag-controlled keys)
-    build_menu_from_config(generate_parser, config, exclude=["project_type", "project_name"])
+    build_menu_from_config(generate_parser, config, exclude=["project_type", "project_name", "include_supacode"])
 
     # Add behavior flags to generate parser
     generate_parser.add_argument(
@@ -796,6 +796,14 @@ def main() -> None:
         help="Create a library project instead of an application (no CLI entry point)",
     )
 
+    # Add a supacode.json wiring Supacode's worktree lifecycle to the run.sh worktree:* commands
+    generate_parser.add_argument(
+        "--supacode",
+        dest="with_supacode",
+        action="store_true",
+        help="Add a supacode.json with worktree lifecycle scripts (setup/archive/delete)",
+    )
+
     # Install the Claude release-docs skill into the generated project's .claude/
     generate_parser.add_argument(
         "--install-skills",
@@ -827,7 +835,7 @@ def main() -> None:
     build_menu_from_config(
         config_parser,
         config,
-        exclude=["project_type", "project_name", "package_name", "description"],
+        exclude=["project_type", "project_name", "package_name", "description", "include_supacode"],
         use_defaults=False,
     )
 
@@ -910,9 +918,12 @@ def main() -> None:
         # Set project_type from --library flag
         args.project_type = "library" if args.is_library else "application"
 
+        # Set include_supacode from --supacode flag
+        args.include_supacode = "yes" if args.with_supacode else "no"
+
         # Filter out non-generate args before passing to generate_project
         # print_args(**args.__dict__)
-        generate_args = {k: v for k, v in args.__dict__.items() if k not in ("command", "is_library")}
+        generate_args = {k: v for k, v in args.__dict__.items() if k not in ("command", "is_library", "with_supacode")}
         generate_project(**generate_args)
 
 

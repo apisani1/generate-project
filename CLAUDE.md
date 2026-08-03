@@ -71,6 +71,9 @@ generate-project generate my-lib --library --github --secrets
 # Public repo with PyPI token files
 generate-project generate my-project --public --secrets --local-env --pypirc
 
+# Add Supacode worktree lifecycle scripts (setup/archive/delete)
+generate-project generate my-project --supacode
+
 # Use Poetry instead of UV
 generate-project generate my-project --manager poetry
 
@@ -83,6 +86,7 @@ generate-project config --author_name "Jane Doe" --email "jane@example.com" --ma
 
 **Key flags:**
 - `--library` — removes CLI entry point (for libraries, not apps)
+- `--supacode` — add `supacode.json` wiring Supacode's worktree lifecycle to `run.sh worktree:*`
 - `--github` / `--public` — create private/public GitHub repo (requires `gh` CLI)
 - `--secrets` — push PYPI_TOKEN, RTD_TOKEN to GitHub repo secrets
 - `--local-env` — create `.env` with token placeholders
@@ -147,6 +151,30 @@ python -c "import generate_project; print(generate_project.__file__.replace('__i
   not Jinja conditionals*, so `run.sh` renders identically for both project types. `scripts/run.sh`
   is the per-repo escape hatch: it is not shipped by the template and is never re-synced, so
   per-project run logic belongs there rather than in the `run` function or the `Makefile` target.
+- **Worktree lifecycle**: `run.sh` provides `worktree:setup` / `worktree:archive` / `worktree:delete`
+  (and `make worktree-*`), which `supacode.json` binds to Supacode's setup/archive/delete hooks.
+  Only those three keys are used — `runScript`, the `scripts` array and `openActionID` are
+  deliberately omitted because they can be set once in `~/.supacode/settings.json` for every repo,
+  whereas the three lifecycle hooks are repository-scoped with no global equivalent. Each phase
+  ends by calling `scripts/worktree-<phase>.sh` if it exists and is executable: exit 0 when absent,
+  the hook's own exit code when present. That file is the per-repo escape hatch (docker teardown,
+  freeing ports) and is never shipped or re-synced by the template.
+  **Archive and delete block on a non-zero exit**, so `worktree:archive`'s generic steps never
+  fail, while `worktree:delete` deliberately does: it refuses when the tree is dirty, when commits
+  are reachable from no other ref (the branch is deleted with the worktree), or when stashes exist
+  on the branch. `SUPACODE_FORCE_DELETE=1` overrides all three. Note that Supacode *rewrites*
+  `supacode.json` when repo settings change in its UI, which may re-add the omitted keys.
+  `supacode.json` exists in **three** tracked copies that must stay identical — this repo's own
+  root plus both templates — guarded by `tests/test_worktree.py`. Keep any `.gitignore` rule for it
+  out of this repo: an unanchored `supacode.json` pattern also matches the template copies and
+  silently untracks them.
+- **`git rev-list --exclude`**: `--exclude=<ref> --all` does **not** survive a preceding `--not` —
+  the ref is silently not excluded, so an orphaned-commit check written that way always returns 0.
+  `worktree:delete` enumerates the other refs with `git for-each-ref` instead. Covered by
+  `tests/test_worktree.py::test_delete_blocks_on_orphaned_commits`.
+- **Poetry venv location**: the Poetry template's `run.sh` exports `POETRY_VIRTUALENVS_IN_PROJECT=true`
+  at the top. Without it Poetry uses its global cache, which defeats the copied-`.venv` defence in
+  `venv`, any shell auto-activation hook, and `worktree:archive`'s `rm -rf .venv`.
 - **`examples/`**: Shipped by both templates but deleted for applications by the post-gen hook
   (the mirror image of how `src/<pkg>/main.py` is deleted for libraries). It sits outside
   `get:python:files`, so it is not linted or formatted, and outside hatchling's `packages`, so it

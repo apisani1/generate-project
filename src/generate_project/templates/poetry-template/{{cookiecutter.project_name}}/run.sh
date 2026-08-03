@@ -18,6 +18,11 @@ if ! python --version 2>&1 | grep -q "^Python 3"; then
     trap "rm -rf '$_TMPBIN'" EXIT
 fi
 
+# Keep the environment inside the checkout (matches how the project was generated). Without
+# this, Poetry puts it in its global cache, which defeats the copied-.venv defence in `venv`,
+# any shell auto-activation hook, and the worktree teardown that removes .venv.
+export POETRY_VIRTUALENVS_IN_PROJECT=true
+
 ######################
 # ENVIRONMENT
 ######################
@@ -62,6 +67,15 @@ function update {
     poetry update
 }
 
+# Absolute path baked into an existing .venv, or empty when there is none.
+# virtualenv hardcodes the creating directory in bin/activate and in every console-script
+# shebang, so a .venv copied from another checkout still points at the original one.
+function get:venv:home {
+    [ -f "$THIS_DIR/.venv/bin/activate" ] || return 0
+    sed -nE "s/^[[:space:]]*VIRTUAL_ENV=['\"]?(\/[^'\"]*)['\"]?[[:space:]]*$/\1/p" \
+        "$THIS_DIR/.venv/bin/activate" | head -1
+}
+
 # Create a new virtual environment
 function venv {
     echo "Creating virtual environment..."
@@ -104,13 +118,11 @@ function venv {
     # creating directory's absolute path in bin/activate and in every console-script shebang, and
     # only falls back to a computed path once that directory is gone. Poetry recreates the venv on
     # the next install, so removing the copy is enough.
-    if [ -f ".venv/bin/activate" ]; then
-        venv_home=$(sed -nE "s/^[[:space:]]*VIRTUAL_ENV=['\"]?(\/[^'\"]*)['\"]?[[:space:]]*$/\1/p" .venv/bin/activate | head -1)
-        if [ -n "$venv_home" ] && [ "$venv_home" != "$THIS_DIR/.venv" ]; then
-            echo "Existing .venv was created for $venv_home - removing it for this checkout"
-            rm -rf .venv
-            echo "NOTE: dependencies are not installed in the new venv - run 'make install-dev'"
-        fi
+    venv_home=$(get:venv:home)
+    if [ -n "$venv_home" ] && [ "$venv_home" != "$THIS_DIR/.venv" ]; then
+        echo "Existing .venv was created for $venv_home - removing it for this checkout"
+        rm -rf .venv
+        echo "NOTE: dependencies are not installed in the new venv - run 'make install-dev'"
     fi
 
     # Tell the shell we exec into that this directory is already activated
@@ -403,6 +415,104 @@ function run {
     echo ""
     echo "  chmod +x scripts/run.sh"
     return 1
+}
+
+######################
+# WORKTREE LIFECYCLE
+######################
+
+# Run scripts/worktree-<phase>.sh when present. Returns 0 when the hook is absent, and the
+# hook's own exit code when it exists. Not owned by the template, so it is never re-synced:
+# project-specific teardown (docker compose down, freeing ports) belongs here.
+function worktree:hook {
+    HOOK="$THIS_DIR/scripts/worktree-$1.sh"
+    [ -x "$HOOK" ] || return 0
+    echo "Running scripts/worktree-$1.sh..."
+    "$HOOK"
+}
+
+# Supacode setupScript: prepare a freshly created worktree.
+function worktree:setup {
+    cd "$THIS_DIR"
+
+    # A new worktree inherits the parent checkout's .venv, but its absolute paths point at the
+    # other directory. Discard it; install:dev recreates one for this checkout.
+    VENV_HOME=$(get:venv:home)
+    if [ -n "$VENV_HOME" ] && [ "$VENV_HOME" != "$THIS_DIR/.venv" ]; then
+        echo "Discarding .venv copied from $VENV_HOME"
+        rm -rf .venv
+    fi
+
+    # Activation is the shell's job - never call venv here, it ends in `exec poetry shell`.
+    install:dev
+
+    if [ -z "$VIRTUAL_ENV" ]; then
+        echo "Virtual environment ready at .venv (not activated in this shell)."
+        echo "Run 'make venv' for a shell with it activated - make targets do not need it."
+    fi
+
+    worktree:hook setup
+}
+
+# Supacode archiveScript: a non-zero exit BLOCKS archiving, so the generic part never fails.
+function worktree:archive {
+    cd "$THIS_DIR"
+
+    echo "Pruning remote-tracking branches..."
+    git fetch --prune origin || echo "  skipped (no origin, or network unavailable)"
+
+    echo "Removing virtual environment..."
+    rm -rf .venv
+
+    echo "Removing build and test caches..."
+    clean || true
+
+    worktree:hook archive
+}
+
+# Supacode deleteScript: a non-zero exit BLOCKS deletion - this is the guardrail. It matters
+# because deleting a worktree also deletes its branch, so unmerged commits become unreachable.
+function worktree:delete {
+    cd "$THIS_DIR"
+
+    if [ "${SUPACODE_FORCE_DELETE:-}" = "1" ]; then
+        echo "SUPACODE_FORCE_DELETE=1 - skipping guardrails"
+    else
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        BLOCKED=0
+
+        if [ -n "$(git status --porcelain)" ]; then
+            echo "BLOCKED: uncommitted changes"
+            git status --short
+            BLOCKED=1
+        fi
+
+        # Commits reachable from HEAD but from no other ref: deleting the branch orphans them.
+        # `--exclude=... --all` does not survive `--not`, so enumerate the other refs explicitly.
+        OTHER_REFS=$(git for-each-ref --format='%(refname)' | grep -vFx "refs/heads/$BRANCH" || true)
+        ORPHANED=$(git rev-list --count HEAD --not $OTHER_REFS)
+        if [ "$ORPHANED" -gt 0 ]; then
+            echo "BLOCKED: $ORPHANED commit(s) exist only on '$BRANCH' (neither merged nor pushed)"
+            git log --oneline HEAD --not $OTHER_REFS | head -10
+            BLOCKED=1
+        fi
+
+        STASHES=$(git stash list | grep -cE "[Oo]n $BRANCH[:,]" || true)
+        if [ "$STASHES" -gt 0 ]; then
+            echo "BLOCKED: $STASHES stash entry/entries created on '$BRANCH'"
+            BLOCKED=1
+        fi
+
+        if [ "$BLOCKED" -ne 0 ]; then
+            echo ""
+            echo "Worktree deletion stopped. Resolve the above, or re-run with:"
+            echo "  SUPACODE_FORCE_DELETE=1"
+            return 1
+        fi
+    fi
+
+    worktree:archive
+    worktree:hook delete
 }
 
 ######################
@@ -814,6 +924,11 @@ function help {
     echo ""
     echo "Run:"
     echo "  run [args]           - Run the app, or an example of the library"
+    echo ""
+    echo "Worktree lifecycle (Supacode setup/archive/delete scripts):"
+    echo "  worktree:setup       - Prepare a freshly created worktree"
+    echo "  worktree:archive     - Tear down a worktree before archiving"
+    echo "  worktree:delete      - Guardrail + teardown before deleting a worktree"
     echo ""
     echo "Testing:"
     echo "  tests [file] [args]   - Run tests"

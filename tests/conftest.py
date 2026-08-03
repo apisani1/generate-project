@@ -15,11 +15,12 @@ from tests.project_structure import (
     application_context,
     custom_context,
     library_context,
+    supacode_context,
     uv_application_context,
     uv_custom_context,
     uv_library_context,
+    uv_supacode_context,
 )
-
 
 # import sys
 # from pathlib import Path
@@ -95,6 +96,13 @@ def application_project(cookies: Result) -> Generator[Result, None, None]:
         yield result
 
 
+@pytest.fixture
+def supacode_project(cookies: Result) -> Generator[Result, None, None]:
+    """Create a project with the Supacode worktree config using the template."""
+    with bake_in_temp_dir(cookies, extra_context=supacode_context) as result:
+        yield result
+
+
 # UV template fixtures
 
 
@@ -139,4 +147,11 @@ def uv_library_project(cookies: Result) -> Generator[Result, None, None]:
 def uv_application_project(cookies: Result) -> Generator[Result, None, None]:
     """Create an application project using the UV template."""
     with bake_uv_in_temp_dir(cookies, extra_context=uv_application_context) as result:
+        yield result
+
+
+@pytest.fixture
+def uv_supacode_project(cookies: Result) -> Generator[Result, None, None]:
+    """Create a project with the Supacode worktree config using the UV template."""
+    with bake_uv_in_temp_dir(cookies, extra_context=uv_supacode_context) as result:
         yield result

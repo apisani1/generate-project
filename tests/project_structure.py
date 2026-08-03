@@ -66,6 +66,17 @@ application_context = {
     "project_type": "application",
 }
 
+supacode_context = {
+    "project_name": "test-supacode",
+    "author_name": "Test User",
+    "email": "test@example.com",
+    "github_username": "testuser",
+    "version": "0.1.0",
+    "description": "A test project with Supacode worktree scripts",
+    "python_min_version": "3.11",
+    "include_supacode": "yes",
+}
+
 # UV template contexts
 uv_custom_context = {
     "project_name": "test-uv-project",
@@ -97,4 +108,15 @@ uv_application_context = {
     "description": "A test UV application project",
     "python_min_version": "3.11",
     "project_type": "application",
+}
+
+uv_supacode_context = {
+    "project_name": "test-uv-supacode",
+    "author_name": "Test User",
+    "email": "test@example.com",
+    "github_username": "testuser",
+    "version": "0.1.0",
+    "description": "A test UV project with Supacode worktree scripts",
+    "python_min_version": "3.11",
+    "include_supacode": "yes",
 }

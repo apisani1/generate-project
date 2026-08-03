@@ -199,11 +199,12 @@ Typical project-specific additions to preserve:
 
 Insert preserved custom targets in a clearly separated block before the `help` target.
 
-**Exception — the `run` target.** `run` is now template-owned and must be taken from the
-template verbatim (`@./run.sh run $(ARGS)`). If the project has a customized `run` target,
-do not preserve it in place: move its command into an executable `scripts/run.sh`, which the
-template-owned `run` function prefers over its built-in defaults. Report this migration in
-the summary.
+**Exception — the `run` and `worktree-*` targets.** `run`, `worktree-setup`, `worktree-archive`
+and `worktree-delete` are template-owned and must be taken from the template verbatim. If the
+project has customized any of them, do not preserve it in place: move the command into the
+matching escape-hatch file (`scripts/run.sh`, or `scripts/worktree-<phase>.sh`), which the
+template-owned functions prefer over their built-in defaults. Report this migration in the
+summary.
 
 ---
 
@@ -219,10 +220,38 @@ Typical project-specific sections to preserve:
 - Any project-specific run commands (`run:*`, `mcp-*`, etc.) not present in the template
 - Any Jupyter kernel setup functions
 
-**Exception — the `run` function.** Take the template's `run` function verbatim; it dispatches
-to `scripts/run.sh` → console script → `examples/main.py`. If the project has a customized
-`run` function, move its command into an executable `scripts/run.sh` instead of preserving the
-customization, and report the migration in the summary.
+**Exception — the `run` and `worktree:*` functions.** Take the template's `run`, `worktree:hook`,
+`worktree:setup`, `worktree:archive`, `worktree:delete` and `get:venv:home` functions verbatim.
+`run` dispatches to `scripts/run.sh` → console script → `examples/main.py`; each `worktree:*`
+phase ends by calling `scripts/worktree-<phase>.sh`. If the project has customized any of them,
+move the command into the matching escape-hatch file instead of preserving the customization, and
+report the migration in the summary.
+
+**Poetry projects:** the template now exports `POETRY_VIRTUALENVS_IN_PROJECT=true` near the top of
+`run.sh`. Take it. Without it Poetry uses its global cache, and the copied-`.venv` handling in
+`venv` plus `worktree:archive`'s cleanup silently do nothing. Warn that the next install creates a
+fresh in-project `.venv`, superseding any cached environment.
+
+---
+
+### `supacode.json`
+**Strategy:** Create-If-Missing, otherwise leave alone
+
+Only relevant to Supacode users; the template ships it when generated with `--supacode`. If the
+project has no `supacode.json` and the user wants the worktree lifecycle wired up, create it with
+exactly the three lifecycle keys:
+
+```json
+{
+  "archiveScript" : "./run.sh worktree:archive",
+  "deleteScript" : "./run.sh worktree:delete",
+  "setupScript" : "./run.sh worktree:setup"
+}
+```
+
+Never overwrite an existing one. Supacode rewrites this file itself when repository settings
+change in its UI, so any other keys it contains (`runScript`, `scripts`, `openActionID`, ...) are
+the user's own configuration — leave them untouched.
 
 ---
 

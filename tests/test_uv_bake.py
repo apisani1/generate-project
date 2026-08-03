@@ -147,6 +147,21 @@ def test_uv_run_uses_uv(uv_default_project: Result) -> None:
     assert f'uv run {project_name} "$@"' in content, "UV template should run the console script via uv"
 
 
+def test_uv_supacode_json_absent_by_default(uv_default_project: Result) -> None:
+    """Test that the UV template also keeps supacode.json opt-in."""
+    assert not os.path.exists(os.path.join(uv_default_project.project_path, "supacode.json"))
+
+
+def test_uv_worktree_functions_present(uv_default_project: Result) -> None:
+    """The worktree commands ship unconditionally; only supacode.json is gated by the flag."""
+    run_sh_path = os.path.join(uv_default_project.project_path, "run.sh")
+    with open(run_sh_path) as f:
+        content = f.read()
+
+    for name in ("worktree:hook", "worktree:setup", "worktree:archive", "worktree:delete"):
+        assert f"function {name} " in content, f"missing '{name}' in run.sh"
+
+
 def test_uv_project_structure(uv_default_project: Result) -> None:
     """Test that UV project has all required files."""
     from tests.project_structure import expected_files

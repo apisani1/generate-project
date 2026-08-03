@@ -1,5 +1,6 @@
 """Test the project structure is as expected."""
 
+import json
 import os
 import re
 
@@ -136,7 +137,19 @@ def test_makefile_content(default_project: Result) -> None:
         makefile_content = f.read()
 
     # Check for common make targets
-    expected_targets = ["install", "format", "lint", "run", "test", "docs", "build", "publish"]
+    expected_targets = [
+        "install",
+        "format",
+        "lint",
+        "run",
+        "worktree-setup",
+        "worktree-archive",
+        "worktree-delete",
+        "test",
+        "docs",
+        "build",
+        "publish",
+    ]
 
     for target in expected_targets:
         assert re.search(rf"{target}\s*:", makefile_content), f"Missing '{target}' target in Makefile"
@@ -192,6 +205,23 @@ def test_application_has_no_examples(application_project: Result) -> None:
     """Test that application projects drop examples/ in favour of the console script."""
     examples_dir = path_in_output(application_project, "examples")
     assert not os.path.exists(examples_dir), "Application should not have an examples/ directory"
+
+
+def test_supacode_json_absent_by_default(default_project: Result) -> None:
+    """Test that supacode.json is opt-in via --supacode."""
+    assert not os.path.exists(path_in_output(default_project, "supacode.json"))
+
+
+def test_supacode_json_wires_worktree_lifecycle(supacode_project: Result) -> None:
+    """Test that supacode.json maps the three lifecycle hooks onto run.sh commands."""
+    with open(path_in_output(supacode_project, "supacode.json")) as f:
+        config = json.load(f)
+
+    assert config == {
+        "setupScript": "./run.sh worktree:setup",
+        "archiveScript": "./run.sh worktree:archive",
+        "deleteScript": "./run.sh worktree:delete",
+    }, "supacode.json must define exactly the three lifecycle scripts"
 
 
 def test_run_target_dispatch_order(default_project: Result) -> None:

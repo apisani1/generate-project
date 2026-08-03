@@ -1,4 +1,4 @@
-.PHONY: all format lint lint-mypy lint-flake8 lint-pylint run test tests test-manual help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc release-beta release-alpha release-major-a release-major-b release-major-rc release-minor-a release-minor-b release-minor-rc release-micro-a release-micro-b release-micro-rc rollback venv venv-clean
+.PHONY: all format lint lint-mypy lint-flake8 lint-pylint run worktree-setup worktree-archive worktree-delete test tests test-manual help clean build publish publish-test docs docs-live docs-check release-major release-minor release-micro release-rc release-beta release-alpha release-major-a release-major-b release-major-rc release-minor-a release-minor-b release-minor-rc release-micro-a release-micro-b release-micro-rc rollback venv venv-clean
 
 ######################
 # This automation tasks were inspired by automation patterns from
@@ -112,6 +112,22 @@ pre-commit:
 # Run the application, or an example of the library
 run:
 	@./run.sh run $(ARGS)
+
+######################
+# WORKTREE LIFECYCLE
+######################
+
+# Prepare a freshly created worktree (Supacode setupScript)
+worktree-setup:
+	@./run.sh worktree:setup
+
+# Tear down a worktree before archiving (Supacode archiveScript)
+worktree-archive:
+	@./run.sh worktree:archive
+
+# Guardrail + teardown before deleting a worktree (Supacode deleteScript)
+worktree-delete:
+	@./run.sh worktree:delete
 
 ######################
 # TESTING
@@ -344,6 +360,11 @@ help:
 	@echo 'Run:'
 	@echo '  make run                  - Run the app, or an example of the library'
 	@echo '  make run ARGS="--flag"    - Run with arguments'
+	@echo ''
+	@echo 'Worktree lifecycle:'
+	@echo '  make worktree-setup       - Prepare a freshly created worktree'
+	@echo '  make worktree-archive     - Tear down a worktree before archiving'
+	@echo '  make worktree-delete      - Guardrail + teardown before deleting'
 	@echo ''
 	@echo 'Testing:'
 	@echo '  make test                 - Run tests'
