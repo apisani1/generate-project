@@ -1,5 +1,64 @@
 # Changelog
 
+## [2.4.0] - 2026-08-03
+
+### Added
+- **`make run`** / **`./run.sh run`**: launches the generated application's
+  console script, or a library's bundled `examples/main.py`, with
+  `scripts/run.sh` as a per-repo escape hatch checked first. Both templates
+  now ship `examples/main.py`; the post-generation hook removes it for
+  applications (mirroring how `main.py` is already removed for libraries).
+- **`--supacode` flag**: generates a `supacode.json` wiring Supacode's
+  setup/archive/delete worktree hooks to three new `run.sh` commands (also
+  exposed as `make worktree-*`):
+  - `worktree:setup` — discards a `.venv` inherited from the parent checkout,
+    then installs dev dependencies
+  - `worktree:archive` — prunes remote-tracking branches, removes the venv
+    and build/test caches
+  - `worktree:delete` — guardrail (blocks on a dirty tree, commits reachable
+    from no other ref, or stashes on the branch; override with
+    `SUPACODE_FORCE_DELETE=1`), then the same teardown as archive
+  Each phase calls an optional `scripts/worktree-<phase>.sh` per-repo hook.
+  `supacode.json` and the `run.sh`/`Makefile` functions are template-owned
+  and stay in sync across the root repo and both cookiecutter templates.
+
+### Fixed
+- `run.sh`'s `venv` target could silently activate another checkout's Python
+  environment when `.venv` had been copied along with the directory (e.g. by
+  worktree tooling), since `uv`/`virtualenv` hardcode the creating path in
+  `bin/activate` and console-script shebangs. It now always operates on
+  `THIS_DIR`, unconditionally strips stale `.venv/bin` entries from `PATH`,
+  and detects and recreates a `.venv` copied from elsewhere.
+- The orphaned-commit check in `worktree:delete` now enumerates other refs
+  with `git for-each-ref` — `git rev-list --exclude=<ref> --all` silently
+  ignores `--exclude` when combined with a preceding `--not`.
+
+### Changed
+- **Behavior change (Poetry projects)**: the Poetry template's `run.sh` now
+  exports `POETRY_VIRTUALENVS_IN_PROJECT=true`. Without it, Poetry placed
+  the environment in its global cache, defeating the copied-`.venv`
+  detection, any shell auto-activation hook, and `worktree:archive`'s
+  cleanup. Existing Poetry repos get a fresh in-project `.venv` on their
+  next install.
+- `update-dev-env` skill: the `run`/`worktree:*` `Makefile` targets and
+  `run.sh` functions are now treated as template-owned — customizations are
+  migrated into the escape-hatch scripts (`scripts/run.sh`,
+  `scripts/worktree-<phase>.sh`) instead of preserved in place. The skill
+  also creates `supacode.json` on request (create-if-missing; never
+  overwrites an existing one, since Supacode itself rewrites it from its UI).
+- Modernized VSCode lint settings: removed deprecated `python.linting.*`
+  keys and per-tool path overrides (`flake8.path`, `pylint.path`) in favor
+  of `importStrategy=fromEnvironment`; broadened mypy/pylint ignore-path
+  patterns to directory-based matches.
+- Removed the hardcoded version query parameter from the PyPI badge URL in
+  `README.md` and `docs/source/badges.md`, and dropped both files from the
+  bumpversion `version_variable` list.
+
+### Internal
+- Added `tests/test_worktree.py` covering the worktree lifecycle commands,
+  including the three-copy `supacode.json` sync and the orphaned-commit
+  guardrail.
+
 ## [2.3.0] - 2026-06-19
 
 ### Added
