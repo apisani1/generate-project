@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.4.0.post1] - 2026-08-03
+
+### Documentation
+- Documented the `--supacode` flag (introduced in 2.4.0): new "Supacode
+  Integration" section in `README.md` / `docs/source/home.md` covering
+  `supacode.json` generation and the `make worktree-setup` /
+  `make worktree-archive` / `make worktree-delete` targets, plus a matching
+  row and behavior notes in `docs/source/reference.md`'s Project Type Options.
+- Documented `make run` (introduced in 2.4.0) in the Makefile task list
+  across `README.md`, `docs/source/home.md`, and `docs/source/reference.md`.
+- Added the `examples/` directory (shipped for libraries, removed for
+  applications) to the generated Project Structure tree in all three docs.
+- Removed a stale `docs/source/reference.md` paragraph describing a PyPI
+  badge `?v=<version>` cache-bust parameter — that behavior was already
+  removed from `pyproject.toml`'s `version_variable` list in 2.4.0, but the
+  doc describing it was never updated.
+
 ## [2.4.0] - 2026-08-03
 
 ### Added
