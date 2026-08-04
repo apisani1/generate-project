@@ -135,6 +135,7 @@ project-name/
 ├── src/package_name/          # Source code
 │   └── __init__.py            # Package initialization
 ├── tests/                     # Test directory
+├── examples/                  # Example usage (libraries only; removed for applications)
 ├── scripts/                   # Release management scripts
 ├── .env                       # Environment variables (if --local-env used)
 ├── .gitignore                 # Git ignore rules
@@ -165,6 +166,24 @@ generate-project generate my-lib --library
 |--------------|-----------------|---------|----------|
 | Application | Yes | Yes | CLI tools, scripts |
 | Library | No | No | Reusable packages, APIs |
+
+## Supacode Integration
+
+Use the `--supacode` flag to generate a `supacode.json` that wires
+[Supacode](https://supacode.dev/)'s worktree lifecycle hooks (setup/archive/delete) to three
+new `run.sh` commands, also exposed as Makefile targets:
+
+```bash
+generate-project generate my-project --supacode
+```
+
+| Command | Supacode hook | What it does |
+|---------|----------------|---------------|
+| `make worktree-setup` | setupScript | Discards a `.venv` inherited from the parent checkout, then installs dev dependencies |
+| `make worktree-archive` | archiveScript | Prunes remote-tracking branches, removes the venv and build/test caches |
+| `make worktree-delete` | deleteScript | Guardrail (blocks on a dirty tree, commits reachable from no other ref, or stashes on the branch — override with `SUPACODE_FORCE_DELETE=1`), then the same teardown as archive |
+
+Each phase also calls an optional `scripts/worktree-<phase>.sh` per-repo hook if present.
 
 ## GitHub Repository Setup
 
@@ -211,6 +230,13 @@ make docs-api             # Generate API documentation
 make docs                 # Build documentation
 make docs-live            # Start live preview server
 
+# Run
+make run                  # Run the application, or an example of the library
+
+# Worktree lifecycle (Supacode, requires --supacode)
+make worktree-setup       # Prepare a freshly created worktree
+make worktree-archive     # Tear down a worktree before archiving
+make worktree-delete      # Guardrail + teardown before deleting
 
 # Release tasks will bump the version, create a new release and publish it
 make release-major        # Create major release

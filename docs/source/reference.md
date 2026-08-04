@@ -77,6 +77,7 @@ These options configure the project metadata and can be saved as defaults using 
 |--------|-------------|---------|
 | `--library` | Create a library project (no CLI entry point) | Application project |
 | `--manager` | Package manager: `uv` or `poetry` | `uv` |
+| `--supacode` | Generate a `supacode.json` wiring Supacode's setup/archive/delete worktree hooks to `run.sh`/`make worktree-*` | Not created |
 
 The default UV projects use the hatchling build backend, PEP 621 `[project]` metadata with
 `[dependency-groups]` (PEP 735), `astral-sh/setup-uv` in CI, and `uv sync`/`uv run`/`uv
@@ -92,6 +93,14 @@ When `--library` is specified:
 - No `[project.scripts]` section is added to `pyproject.toml`
 - No `main.py` CLI entry point is created
 - README focuses on API usage instead of CLI usage
+
+When `--supacode` is specified:
+- A `supacode.json` is created, binding Supacode's setup/archive/delete worktree hooks to three
+  new `run.sh` commands (also exposed as `make worktree-setup`, `make worktree-archive`,
+  `make worktree-delete`)
+- `worktree:delete` refuses to run on a dirty tree, on commits reachable from no other ref, or
+  when stashes exist on the branch — override with `SUPACODE_FORCE_DELETE=1`
+- Each phase also calls an optional `scripts/worktree-<phase>.sh` per-repo hook if present
 
 #### GitHub Integration Options (requires gh CLI)
 
@@ -377,6 +386,7 @@ project-name/
 ├── src/package_name/          # Source code
 │   └── __init__.py            # Package initialization
 ├── tests/                     # Test directory
+├── examples/                  # Example usage (libraries only; removed for applications)
 ├── scripts/                   # Release management scripts
 ├── .env                       # Environment variables (if --local-env used)
 ├── .gitignore                 # Git ignore rules
@@ -444,6 +454,13 @@ make docs-api             # Generate API documentation
 make docs                 # Build documentation
 make docs-live            # Start live preview server
 
+# Run
+make run                  # Run the application, or an example of the library
+
+# Worktree lifecycle (Supacode, requires --supacode)
+make worktree-setup       # Prepare a freshly created worktree
+make worktree-archive     # Tear down a worktree before archiving
+make worktree-delete      # Guardrail + teardown before deleting
 
 # Release tasks will bump the version, create a new release and publish it
 make release-major        # Create major release
@@ -478,10 +495,6 @@ A draft is used only when it exists, is non-empty, and was modified more recentl
 previous release tag; otherwise you are prompted to continue with the generated content (each
 draft is confirmed independently). The folder is git-ignored. The older `--changes` flag is
 deprecated in favor of these drafts.
-
-Each release also bumps a `?v=<version>` cache-bust parameter on the README's PyPI badge (via the
-`version_variable` list in `pyproject.toml`), so the badge image refreshes on GitHub without a
-manual post-publish commit.
 
 #### The release-docs Claude skill
 
