@@ -369,9 +369,17 @@ def create_secrets_file(project_dir: Path, secrets_file: str, secrets: List[str]
                 f"  ⚠️  No {secret_name} found in environment, creating {secrets_file} with placeholder", Colors.YELLOW
             )
 
-    # Write secrets file with restricted permissions
-    secrets_file_path.write_text(secrets_file_template.format(**tokens))
-    secrets_file_path.chmod(0o600)
+    # Create the file owner-only from the start (no window where it is readable by others) and
+    # exclusively (O_EXCL: never overwrite, and never follow a pre-planted file or symlink).
+    try:
+        fd = os.open(secrets_file_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        print_colored(
+            f"  ⚠️  {secrets_file} already exists at {secrets_file_path}, refusing to overwrite", Colors.YELLOW
+        )
+        return
+    with os.fdopen(fd, "w") as f:
+        f.write(secrets_file_template.format(**tokens))
 
     if all(token_found.values()):
         print_colored(f"{secrets_file} file created successfully at {secrets_file_path}", Colors.GREEN)
