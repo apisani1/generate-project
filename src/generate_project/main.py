@@ -13,6 +13,7 @@ import tempfile
 from enum import Enum
 from pathlib import Path
 from typing import (
+    Callable,
     Dict,
     List,
     Optional,
@@ -64,6 +65,55 @@ class Colors(Enum):
 def print_colored(message: str, color: Colors = Colors.NC) -> None:
     """Print message with color."""
     print(f"{color.value}{message}{Colors.NC.value}")
+
+
+# Cookiecutter renders every string value as a Jinja template (in an unsandboxed environment), so a
+# value containing these markers can execute code. Values supplied by the user never need them.
+JINJA_MARKERS = ("{{", "{%", "{#")
+
+
+def contains_jinja(value: str) -> bool:
+    """Return True if ``value`` contains Jinja template syntax."""
+    return any(marker in value for marker in JINJA_MARKERS)
+
+
+def check_no_jinja(name: str, value: str, trusted: Optional[str] = None) -> str:
+    """Return ``value`` unchanged, or raise ValueError if it contains Jinja syntax.
+
+    ``trusted`` is a vetted default (shipped in cookiecutter.json, e.g. the ``package_name``
+    template) that is allowed to contain Jinja; any other value is rejected.
+    """
+    if value != trusted and contains_jinja(value):
+        raise ValueError(
+            f"'{name}' must not contain template syntax ({', '.join(JINJA_MARKERS)}): cookiecutter would "
+            "evaluate it as code"
+        )
+    return value
+
+
+def jinja_free_type(name: str, trusted: Optional[str] = None) -> Callable[[str], str]:
+    """Build an argparse ``type=`` callable that rejects Jinja syntax in a value."""
+
+    def convert(value: str) -> str:
+        try:
+            return check_no_jinja(name, value, trusted)
+        except ValueError as e:
+            raise argparse.ArgumentTypeError(str(e)) from e
+
+    return convert
+
+
+def validate_user_config(user_config: Dict, trusted_defaults: Dict, config_path: Path) -> None:
+    """Exit with an error if a saved default in config.yaml contains Jinja syntax."""
+    for key, value in user_config.items():
+        if not isinstance(value, str):
+            continue
+        try:
+            check_no_jinja(key, value, trusted_defaults.get(key))
+        except ValueError as e:
+            print_colored(f"Error in {config_path}: {e}", Colors.RED)
+            print_colored("Remove or fix this value (e.g. with 'generate-project config') and retry.", Colors.RED)
+            sys.exit(1)
 
 
 def run_command(
@@ -127,6 +177,11 @@ def generate_project(
     if project_name.strip() == ".":
         project_dir = Path.cwd()
         project_name = str(project_dir.name)
+        try:
+            check_no_jinja("project_name", project_name)
+        except ValueError as e:
+            print_colored(f"Error: current directory name is not a valid project name: {e}", Colors.RED)
+            sys.exit(1)
         create_project_dir = False
     else:
         project_dir = Path.cwd() / project_name
@@ -570,7 +625,9 @@ def build_menu_from_config(
         if not isinstance(value, str):
             raise ValueError(f"Invalid configuration for key '{key}': expected string value.")
         default = value if use_defaults else None
-        parser.add_argument(f"--{key}", type=str, default=default, help=f"Set {key} (default: {value})")
+        parser.add_argument(
+            f"--{key}", type=jinja_free_type(key, value), default=default, help=f"Set {key} (default: {value})"
+        )
 
 
 def update_config_file(user_config_file_path: Path, user_config: Dict, args: Dict) -> None:
@@ -760,6 +817,7 @@ def main() -> None:
     cookiecutter_config = read_json_file(global_config_file_path)
     user_config_file_path = Path(__file__).parent / "templates" / "config.yaml"
     user_config = read_yaml_file(user_config_file_path).get("default_context", {})
+    validate_user_config(user_config, cookiecutter_config, user_config_file_path)
     config = overwrite_default_values(cookiecutter_config, user_config)
 
     # Create main parser
@@ -787,7 +845,9 @@ def main() -> None:
     )
 
     # Add project name as positional argument to generate command
-    generate_parser.add_argument("project_name", help="Name of the project to create")
+    generate_parser.add_argument(
+        "project_name", type=jinja_free_type("project_name"), help="Name of the project to create"
+    )
 
     # Add project configuration arguments to generate parser (exclude computed/flag-controlled keys)
     build_menu_from_config(generate_parser, config, exclude=["project_type", "project_name", "include_supacode"])

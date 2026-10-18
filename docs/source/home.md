@@ -92,10 +92,10 @@ generate-project generate "project-name"
 ```
 
 > **Security note:** a cookiecutter template can run arbitrary code (`hooks/` scripts) on your machine
-> while it generates a project, and option values and `config.yaml` entries are rendered as Jinja
-> templates. Only use `--template` paths, `config.yaml` files and option values you trust.
-> generate-project asks for confirmation before using a template from outside the package
-> (pass `--yes` to skip the prompt in scripts).
+> while it generates a project. generate-project asks for confirmation before using a template from
+> outside the package (pass `--yes` to skip the prompt in scripts), so only use `--template` paths you
+> trust. Because cookiecutter evaluates `{{ ... }}` in option values as code, generate-project rejects
+> values containing Jinja syntax (`{{`, `{%`, `{#`) in command-line options and in `config.yaml`.
 
 ## Package Manager
 

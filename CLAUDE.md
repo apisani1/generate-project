@@ -179,6 +179,11 @@ python -c "import generate_project; print(generate_project.__file__.replace('__i
   (the mirror image of how `src/<pkg>/main.py` is deleted for libraries). It sits outside
   `get:python:files`, so it is not linted or formatted, and outside hatchling's `packages`, so it
   is not published.
+- **Jinja in option values**: cookiecutter renders every `key=value` string as an *unsandboxed* Jinja
+  template, so `{{`/`{%`/`{#` in a value is code execution. `main.py` rejects them in CLI options
+  (`jinja_free_type`) and in `config.yaml` (`validate_user_config`), except a value exactly equal to its
+  shipped `cookiecutter.json` default — `package_name` legitimately *is* a Jinja template. Don't add
+  options that bypass this, and keep new defaults out of the user-supplied path.
 - **Package name**: Auto-derived from project name (lowercase, hyphens→underscores). Cannot differ.
 - **`--library` flag**: Removes `src/<package>/main.py` post-generation (no CLI entry point)
 - **`.` as project name**: Generates into current directory instead of creating a new dir
