@@ -46,6 +46,7 @@ ENV/
 # Misc
 .DS_Store
 *.pkl
+.before_last_release.json
 *.pickle
 
 # Project notes (local only)

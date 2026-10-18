@@ -1,6 +1,8 @@
 """Exhaustive bump_version matrix tests."""
 
+import json
 import os
+import pickle
 from datetime import (
     datetime,
     timedelta,
@@ -248,9 +250,9 @@ class TestRollbackState:
     """Tests for the RollbackState class."""
 
     def _make_state(self, tmp_path: Path) -> RollbackState:
-        """Create a RollbackState with PICKLE_FILE pointing to tmp_path."""
+        """Create a RollbackState with STATE_FILE pointing to tmp_path."""
         state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
-        state.PICKLE_FILE = str(tmp_path / "test_state.pkl")
+        state.STATE_FILE = str(tmp_path / "test_state.json")
         return state
 
     def test_init(self) -> None:
@@ -275,19 +277,52 @@ class TestRollbackState:
     def test_save_and_load(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         state = self._make_state(tmp_path)
         state.add_to_backup([("file.txt", "original")])
-        pickle_path = state.PICKLE_FILE
+        state_path = state.STATE_FILE
         state.save()
 
-        monkeypatch.setattr(RollbackState, "PICKLE_FILE", pickle_path)
+        monkeypatch.setattr(RollbackState, "STATE_FILE", state_path)
         loaded = RollbackState.load()
         assert loaded.current_version == state.current_version
         assert loaded.start_dt == state.start_dt
         assert loaded.files_backup == [("file.txt", "original")]
 
     def test_load_file_not_found(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(RollbackState, "PICKLE_FILE", str(tmp_path / "missing.pkl"))
+        monkeypatch.setattr(RollbackState, "STATE_FILE", str(tmp_path / "missing.json"))
         with pytest.raises(FileNotFoundError):
             RollbackState.load()
+
+    def test_saved_state_is_plain_json(self, tmp_path: Path) -> None:
+        state = self._make_state(tmp_path)
+        state.add_to_backup([("file.txt", "original"), ("new.txt", None)])
+        state.save()
+        data = json.loads((tmp_path / "test_state.json").read_text())
+        assert data["current_version"] == "1.2.3"
+        assert data["files_backup"] == [["file.txt", "original"], ["new.txt", None]]
+
+    @pytest.mark.parametrize(
+        "content", ["not json", "{}", '{"start_dt": "x", "current_version": "1", "files_backup": []}']
+    )
+    def test_load_rejects_malformed_state(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, content: str) -> None:
+        path = tmp_path / "bad.json"
+        path.write_text(content)
+        monkeypatch.setattr(RollbackState, "STATE_FILE", str(path))
+        with pytest.raises(RuntimeError):
+            RollbackState.load()
+
+    def test_load_does_not_execute_serialized_payload(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A hostile serialized payload in the state file must be rejected, never executed."""
+        marker = tmp_path / "pwned"
+
+        class Evil:
+            def __reduce__(self):  # type: ignore[no-untyped-def]
+                return (marker.write_text, ("x",))
+
+        path = tmp_path / "evil.json"
+        path.write_bytes(pickle.dumps(Evil()))
+        monkeypatch.setattr(RollbackState, "STATE_FILE", str(path))
+        with pytest.raises(RuntimeError):
+            RollbackState.load()
+        assert not marker.exists()
 
     def test_restore_files(self, tmp_path: Path) -> None:
         file_a = tmp_path / "a.txt"
@@ -330,12 +365,12 @@ class TestRollbackState:
 
         assert not missing_file.exists()
 
-    def test_cleanup_removes_pickle(self, tmp_path: Path) -> None:
+    def test_cleanup_removes_state_file(self, tmp_path: Path) -> None:
         state = self._make_state(tmp_path)
         state.save()
-        assert (tmp_path / "test_state.pkl").exists()
+        assert (tmp_path / "test_state.json").exists()
         state.cleanup()
-        assert not (tmp_path / "test_state.pkl").exists()
+        assert not (tmp_path / "test_state.json").exists()
 
     def test_cleanup_no_file(self, tmp_path: Path) -> None:
         state = self._make_state(tmp_path)
@@ -368,7 +403,7 @@ class TestReleaseMessages:
         release_notes = tmp_path / RELEASE_NOTES_FILE
         changelog.write_text("# Changelog\n\n## [1.2.3] - 2026-05-01\n\n### Changes\n- Previous\n")
         state = RollbackState(datetime.now().astimezone(), Version("1.2.3"))
-        state.PICKLE_FILE = str(tmp_path / "test_state.pkl")
+        state.STATE_FILE = str(tmp_path / "test_state.json")
         commit_message = create_commit_message(Version("1.2.4"), "- Fix release notes", interactive=False)
 
         changelog_entry = update_changelog(
