@@ -76,6 +76,23 @@ def write_manifest(assets_dir: Optional[Path] = None) -> Path:
     return path
 
 
+def _safe_target(dest: Path, rel: str) -> Path:
+    """Return ``dest / rel``, refusing manifest entries that could escape ``dest``."""
+    parts = rel.split("/")
+    if (
+        not rel
+        or "\\" in rel
+        or Path(rel).is_absolute()
+        or any(part in ("", ".", "..") for part in parts)
+        or parts[0] not in ASSET_SUBDIRS
+    ):
+        raise ValueError(f"unsafe asset path in manifest: {rel!r}")
+    target = dest / rel
+    if not target.resolve().is_relative_to(dest.resolve()):
+        raise ValueError(f"asset path escapes destination: {rel!r}")
+    return target
+
+
 def install_claude_skills(
     dest: Path,
     *,
@@ -99,7 +116,7 @@ def install_claude_skills(
     skipped: List[Path] = []
     for rel in read_manifest(assets_dir):
         src = assets_dir / rel
-        target = dest / rel
+        target = _safe_target(dest, rel)
         if target.exists() and not force:
             skipped.append(target)
             continue
