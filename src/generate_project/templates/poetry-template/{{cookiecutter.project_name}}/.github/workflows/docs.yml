@@ -27,10 +27,10 @@ jobs:
       contents: read         # for actions/checkout
       pull-requests: write   # for the "Comment PR with documentation preview" step
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '{{ cookiecutter.python_min_version }}'
 
@@ -86,7 +86,7 @@ jobs:
 
       - name: Upload Documentation Artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: documentation
           path: docs/_build/html/
@@ -95,7 +95,7 @@ jobs:
       - name: Comment PR with documentation preview
         if: github.event_name == 'pull_request' && success()
         continue-on-error: true   # PRs from forks always get a read-only token; never fail the docs check over a cosmetic comment
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ "{{" }} secrets.GITHUB_TOKEN {{ "}}" }}
           script: |
