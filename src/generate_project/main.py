@@ -13,6 +13,7 @@ import tempfile
 from enum import Enum
 from pathlib import Path
 from typing import (
+    Callable,
     Dict,
     List,
     Optional,
@@ -64,6 +65,55 @@ class Colors(Enum):
 def print_colored(message: str, color: Colors = Colors.NC) -> None:
     """Print message with color."""
     print(f"{color.value}{message}{Colors.NC.value}")
+
+
+# Cookiecutter renders every string value as a Jinja template (in an unsandboxed environment), so a
+# value containing these markers can execute code. Values supplied by the user never need them.
+JINJA_MARKERS = ("{{", "{%", "{#")
+
+
+def contains_jinja(value: str) -> bool:
+    """Return True if ``value`` contains Jinja template syntax."""
+    return any(marker in value for marker in JINJA_MARKERS)
+
+
+def check_no_jinja(name: str, value: str, trusted: Optional[str] = None) -> str:
+    """Return ``value`` unchanged, or raise ValueError if it contains Jinja syntax.
+
+    ``trusted`` is a vetted default (shipped in cookiecutter.json, e.g. the ``package_name``
+    template) that is allowed to contain Jinja; any other value is rejected.
+    """
+    if value != trusted and contains_jinja(value):
+        raise ValueError(
+            f"'{name}' must not contain template syntax ({', '.join(JINJA_MARKERS)}): cookiecutter would "
+            "evaluate it as code"
+        )
+    return value
+
+
+def jinja_free_type(name: str, trusted: Optional[str] = None) -> Callable[[str], str]:
+    """Build an argparse ``type=`` callable that rejects Jinja syntax in a value."""
+
+    def convert(value: str) -> str:
+        try:
+            return check_no_jinja(name, value, trusted)
+        except ValueError as e:
+            raise argparse.ArgumentTypeError(str(e)) from e
+
+    return convert
+
+
+def validate_user_config(user_config: Dict, trusted_defaults: Dict, config_path: Path) -> None:
+    """Exit with an error if a saved default in config.yaml contains Jinja syntax."""
+    for key, value in user_config.items():
+        if not isinstance(value, str):
+            continue
+        try:
+            check_no_jinja(key, value, trusted_defaults.get(key))
+        except ValueError as e:
+            print_colored(f"Error in {config_path}: {e}", Colors.RED)
+            print_colored("Remove or fix this value (e.g. with 'generate-project config') and retry.", Colors.RED)
+            sys.exit(1)
 
 
 def run_command(
@@ -127,6 +177,11 @@ def generate_project(
     if project_name.strip() == ".":
         project_dir = Path.cwd()
         project_name = str(project_dir.name)
+        try:
+            check_no_jinja("project_name", project_name)
+        except ValueError as e:
+            print_colored(f"Error: current directory name is not a valid project name: {e}", Colors.RED)
+            sys.exit(1)
         create_project_dir = False
     else:
         project_dir = Path.cwd() / project_name
@@ -369,9 +424,17 @@ def create_secrets_file(project_dir: Path, secrets_file: str, secrets: List[str]
                 f"  ⚠️  No {secret_name} found in environment, creating {secrets_file} with placeholder", Colors.YELLOW
             )
 
-    # Write secrets file with restricted permissions
-    secrets_file_path.write_text(secrets_file_template.format(**tokens))
-    secrets_file_path.chmod(0o600)
+    # Create the file owner-only from the start (no window where it is readable by others) and
+    # exclusively (O_EXCL: never overwrite, and never follow a pre-planted file or symlink).
+    try:
+        fd = os.open(secrets_file_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        print_colored(
+            f"  ⚠️  {secrets_file} already exists at {secrets_file_path}, refusing to overwrite", Colors.YELLOW
+        )
+        return
+    with os.fdopen(fd, "w") as f:
+        f.write(secrets_file_template.format(**tokens))
 
     if all(token_found.values()):
         print_colored(f"{secrets_file} file created successfully at {secrets_file_path}", Colors.GREEN)
@@ -562,7 +625,9 @@ def build_menu_from_config(
         if not isinstance(value, str):
             raise ValueError(f"Invalid configuration for key '{key}': expected string value.")
         default = value if use_defaults else None
-        parser.add_argument(f"--{key}", type=str, default=default, help=f"Set {key} (default: {value})")
+        parser.add_argument(
+            f"--{key}", type=jinja_free_type(key, value), default=default, help=f"Set {key} (default: {value})"
+        )
 
 
 def update_config_file(user_config_file_path: Path, user_config: Dict, args: Dict) -> None:
@@ -685,6 +750,40 @@ Documentation:
 """
 
 
+def is_bundled_template(template_path: Path) -> bool:
+    """Return True if ``template_path`` is inside the templates shipped with this package."""
+    bundled = (Path(__file__).parent / "templates").resolve()
+    return template_path.expanduser().resolve().is_relative_to(bundled)
+
+
+def confirm_custom_template(template_path: Path, assume_yes: bool = False) -> bool:
+    """Ask before using a template from outside the package.
+
+    A cookiecutter template can ship ``hooks/`` scripts that run arbitrary Python with your
+    permissions during generation, so only templates you trust should be used. Returns True to
+    proceed. Without a terminal (and without ``--yes``) the answer is no.
+    """
+    resolved = template_path.expanduser().resolve()
+    print_colored(f"Warning: using a custom template from outside generate-project: {resolved}", Colors.YELLOW)
+    print_colored(
+        "Templates can run arbitrary code (hooks/ scripts) on your machine during generation. "
+        "Only continue if you trust this template.",
+        Colors.YELLOW,
+    )
+    hooks = resolved / "hooks"
+    if hooks.is_dir():
+        scripts = sorted(f.name for f in hooks.iterdir() if f.is_file())
+        print_colored(
+            f"This template contains hook scripts that will be executed: {', '.join(scripts)}", Colors.YELLOW
+        )
+    if assume_yes:
+        return True
+    if not sys.stdin.isatty():
+        print_colored("Not running in a terminal; re-run with --yes to use this template.", Colors.RED)
+        return False
+    return input("Use this template? [y/N] ").strip().lower() in ("y", "yes")
+
+
 def print_args(**kwargs: Optional[Dict]) -> None:
     """Print the arguments for debugging."""
     print_colored("Arguments received:", Colors.YELLOW)
@@ -718,6 +817,7 @@ def main() -> None:
     cookiecutter_config = read_json_file(global_config_file_path)
     user_config_file_path = Path(__file__).parent / "templates" / "config.yaml"
     user_config = read_yaml_file(user_config_file_path).get("default_context", {})
+    validate_user_config(user_config, cookiecutter_config, user_config_file_path)
     config = overwrite_default_values(cookiecutter_config, user_config)
 
     # Create main parser
@@ -745,7 +845,9 @@ def main() -> None:
     )
 
     # Add project name as positional argument to generate command
-    generate_parser.add_argument("project_name", help="Name of the project to create")
+    generate_parser.add_argument(
+        "project_name", type=jinja_free_type("project_name"), help="Name of the project to create"
+    )
 
     # Add project configuration arguments to generate parser (exclude computed/flag-controlled keys)
     build_menu_from_config(generate_parser, config, exclude=["project_type", "project_name", "include_supacode"])
@@ -786,7 +888,18 @@ def main() -> None:
 
     # Add file path arguments to generate parser
     generate_parser.add_argument("--env", dest="env_file", type=Path, help="Use specific .env file (default: ./.env)")
-    generate_parser.add_argument("--template", dest="template_path", type=Path, help="Use a specific template path")
+    generate_parser.add_argument(
+        "--template",
+        dest="template_path",
+        type=Path,
+        help="Use a specific template path (asks for confirmation when it is outside generate-project)",
+    )
+    generate_parser.add_argument(
+        "--yes",
+        dest="assume_yes",
+        action="store_true",
+        help="Do not ask for confirmation before using a custom --template",
+    )
 
     # Add project type flag to generate parser
     generate_parser.add_argument(
@@ -911,6 +1024,13 @@ def main() -> None:
         if args.template_path is None:
             args.template_path = Path(__file__).parent / "templates" / f"{args.package_manager}-template"
 
+        # A template outside the package may carry hook scripts that execute code: confirm first
+        if not is_bundled_template(args.template_path) and not confirm_custom_template(
+            args.template_path, args.assume_yes
+        ):
+            print_colored("Aborted: custom template not confirmed.", Colors.RED)
+            sys.exit(1)
+
         # --public or --secrets implies --github
         if args.create_public or args.create_secrets:
             args.create_github = True
@@ -923,7 +1043,9 @@ def main() -> None:
 
         # Filter out non-generate args before passing to generate_project
         # print_args(**args.__dict__)
-        generate_args = {k: v for k, v in args.__dict__.items() if k not in ("command", "is_library", "with_supacode")}
+        generate_args = {
+            k: v for k, v in args.__dict__.items() if k not in ("command", "is_library", "with_supacode", "assume_yes")
+        }
         generate_project(**generate_args)
 
 

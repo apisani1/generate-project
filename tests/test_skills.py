@@ -10,6 +10,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 from generate_project.skills import (
     claude_assets_dir,
     generate_manifest_lines,
@@ -202,3 +204,56 @@ def test_codex_generator_skips_existing_without_force(tmp_path: Path) -> None:
     assert reports[0].installed == []
     assert reports[0].skipped == [installed_file]
     assert installed_file.read_text() == "LOCAL EDIT\n"
+
+
+UNSAFE_MANIFEST_ENTRIES = [
+    "../escape.txt",
+    "skills/../../escape.txt",
+    "/tmp/escape.txt",
+    "skills//x.md",
+    "skills/./x.md",
+    "skills\\..\\escape.txt",
+    "other/x.md",
+]
+
+
+@pytest.mark.parametrize("entry", UNSAFE_MANIFEST_ENTRIES)
+def test_install_rejects_unsafe_manifest_entries(tmp_path: Path, entry: str) -> None:
+    """A manifest entry must never be able to write outside the destination."""
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    (assets / "asset_manifest.txt").write_text(entry + "\n")
+    dest = tmp_path / "dest" / ".claude"
+    with pytest.raises(ValueError):
+        install_claude_skills(dest, assets_dir=assets)
+    assert not (tmp_path / "escape.txt").exists()
+    assert not dest.exists()
+
+
+@pytest.mark.parametrize("path", INSTALLER_PATHS, ids=["uv", "poetry"])
+@pytest.mark.parametrize("entry", UNSAFE_MANIFEST_ENTRIES)
+def test_template_installer_rejects_unsafe_downloaded_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, path: Path, entry: str
+) -> None:
+    """A hostile downloaded manifest is rejected before anything is written."""
+    module = _load_installer(path)
+    monkeypatch.setattr(module, "local_assets_dir", lambda: None)
+    monkeypatch.setattr(module, "_download", lambda url: (entry + "\n").encode())
+    dest = tmp_path / "dest" / ".claude"
+    with pytest.raises(ValueError):
+        module.install(dest, force=True, dry_run=False, ref="main", assume_yes=True)
+    assert not (tmp_path / "escape.txt").exists()
+    assert not dest.exists()
+
+
+@pytest.mark.parametrize("path", INSTALLER_PATHS, ids=["uv", "poetry"])
+def test_template_installer_accepts_valid_downloaded_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, path: Path
+) -> None:
+    module = _load_installer(path)
+    monkeypatch.setattr(module, "local_assets_dir", lambda: None)
+    monkeypatch.setattr(module, "_download", lambda url: b"skills/a/SKILL.md\ncommands/b.md\n")
+    dest = tmp_path / ".claude"
+    assert module.install(dest, force=False, dry_run=False, ref="main", assume_yes=True) == 0
+    assert (dest / "skills/a/SKILL.md").exists()
+    assert (dest / "commands/b.md").exists()
