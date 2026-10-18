@@ -138,7 +138,8 @@ This local `.env` file will be used for manual publishing tasks:
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--env` | Path to .env file containing tokens for repository secrets | `.env` with location auto-detect|
-| `--template` | Path to custom cookiecutter template | Built-in template (selected by `--manager`) |
+| `--template` | Path to custom cookiecutter template (asks for confirmation; see the security note below) | Built-in template (selected by `--manager`) |
+| `--yes` | Skip the confirmation prompt for a custom `--template` (required when not running in a terminal) | Off |
 
 ### Examples
 
@@ -180,6 +181,12 @@ generate-project generate my-project --manager uv
 generate-project generate my-project \
     --template="/path/to/custom/template" \
     --author_name="John Doe"
+```
+
+```{warning}
+A cookiecutter template can run arbitrary Python (`hooks/` scripts) with your permissions while the
+project is generated. generate-project lists the hook scripts and asks for confirmation before using
+a template outside the package; only continue if you trust the template.
 ```
 
 #### Generate Project in Current Directory

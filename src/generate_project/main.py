@@ -693,6 +693,40 @@ Documentation:
 """
 
 
+def is_bundled_template(template_path: Path) -> bool:
+    """Return True if ``template_path`` is inside the templates shipped with this package."""
+    bundled = (Path(__file__).parent / "templates").resolve()
+    return template_path.expanduser().resolve().is_relative_to(bundled)
+
+
+def confirm_custom_template(template_path: Path, assume_yes: bool = False) -> bool:
+    """Ask before using a template from outside the package.
+
+    A cookiecutter template can ship ``hooks/`` scripts that run arbitrary Python with your
+    permissions during generation, so only templates you trust should be used. Returns True to
+    proceed. Without a terminal (and without ``--yes``) the answer is no.
+    """
+    resolved = template_path.expanduser().resolve()
+    print_colored(f"Warning: using a custom template from outside generate-project: {resolved}", Colors.YELLOW)
+    print_colored(
+        "Templates can run arbitrary code (hooks/ scripts) on your machine during generation. "
+        "Only continue if you trust this template.",
+        Colors.YELLOW,
+    )
+    hooks = resolved / "hooks"
+    if hooks.is_dir():
+        scripts = sorted(f.name for f in hooks.iterdir() if f.is_file())
+        print_colored(
+            f"This template contains hook scripts that will be executed: {', '.join(scripts)}", Colors.YELLOW
+        )
+    if assume_yes:
+        return True
+    if not sys.stdin.isatty():
+        print_colored("Not running in a terminal; re-run with --yes to use this template.", Colors.RED)
+        return False
+    return input("Use this template? [y/N] ").strip().lower() in ("y", "yes")
+
+
 def print_args(**kwargs: Optional[Dict]) -> None:
     """Print the arguments for debugging."""
     print_colored("Arguments received:", Colors.YELLOW)
@@ -794,7 +828,18 @@ def main() -> None:
 
     # Add file path arguments to generate parser
     generate_parser.add_argument("--env", dest="env_file", type=Path, help="Use specific .env file (default: ./.env)")
-    generate_parser.add_argument("--template", dest="template_path", type=Path, help="Use a specific template path")
+    generate_parser.add_argument(
+        "--template",
+        dest="template_path",
+        type=Path,
+        help="Use a specific template path (asks for confirmation when it is outside generate-project)",
+    )
+    generate_parser.add_argument(
+        "--yes",
+        dest="assume_yes",
+        action="store_true",
+        help="Do not ask for confirmation before using a custom --template",
+    )
 
     # Add project type flag to generate parser
     generate_parser.add_argument(
@@ -919,6 +964,13 @@ def main() -> None:
         if args.template_path is None:
             args.template_path = Path(__file__).parent / "templates" / f"{args.package_manager}-template"
 
+        # A template outside the package may carry hook scripts that execute code: confirm first
+        if not is_bundled_template(args.template_path) and not confirm_custom_template(
+            args.template_path, args.assume_yes
+        ):
+            print_colored("Aborted: custom template not confirmed.", Colors.RED)
+            sys.exit(1)
+
         # --public or --secrets implies --github
         if args.create_public or args.create_secrets:
             args.create_github = True
@@ -931,7 +983,9 @@ def main() -> None:
 
         # Filter out non-generate args before passing to generate_project
         # print_args(**args.__dict__)
-        generate_args = {k: v for k, v in args.__dict__.items() if k not in ("command", "is_library", "with_supacode")}
+        generate_args = {
+            k: v for k, v in args.__dict__.items() if k not in ("command", "is_library", "with_supacode", "assume_yes")
+        }
         generate_project(**generate_args)
 
 
