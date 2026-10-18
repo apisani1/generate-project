@@ -151,6 +151,18 @@ Typical project-specific additions to preserve:
 
 ---
 
+### `.github/dependabot.yml`
+**Strategy:** Create-If-Missing, otherwise Diff-and-Merge
+
+Ships a `github-actions` entry that keeps the SHA-pinned actions current (minor/patch updates are
+batched into one PR; major updates arrive as separate PRs). If the project has no
+`.github/dependabot.yml`, create it from the template. If it exists, keep every `updates` entry the
+project already has (e.g. `uv`, `pip`, `npm` ecosystems) and only add or update the
+`github-actions` entry. Never remove an existing entry. The file has no cookiecutter variables, so
+there is nothing to substitute.
+
+---
+
 ### `.readthedocs.yaml`
 **Strategy:** Full Replace
 
@@ -180,6 +192,11 @@ Never drop a key that exists in the current file. Bring in template keys that ar
 
 ### `scripts/release.py`
 **Strategy:** Full Replace (all project-specific configuration is read at runtime from `pyproject.toml`, not hardcoded in the script)
+
+Sync this together with `.gitignore`: the script saves its rollback state to
+`.before_last_release.json` and then runs `git add .`, so the project's `.gitignore` must contain
+that entry or the state file gets committed. The template `.gitignore` has it; if the Diff-and-Merge
+of `.gitignore` somehow leaves it out, add it.
 
 ---
 
