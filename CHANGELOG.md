@@ -1,5 +1,47 @@
 # Changelog
 
+## [2.5.0rc1] - 2026-10-18
+
+### Changed
+- `--template` pointing outside the package now lists the template's `hooks/` scripts and asks for
+  confirmation before generating. Without a terminal it is refused unless `--yes` is passed.
+  **Scripts that pass a custom `--template` non-interactively must add `--yes`.**
+- `scripts/release.py` stores rollback state in `.before_last_release.json` (plain JSON) instead of
+  `.before_last_release.pkl`. A rollback of a release started with an older version cannot read the
+  old pickle file. The new file is git-ignored in the repo and both templates.
+- Template workflows (`delete_workflow_runs`, `docs`, `release`, `tests`, `update_rtd`) pin actions
+  to commit SHAs, matching the repo's own.
+
+### Added
+- `--yes` flag for `generate` to skip the custom-template confirmation.
+- `.github/dependabot.yml` (weekly GitHub Actions updates; minor/patch batched, majors separate) in
+  the repo and both templates.
+- `.github/workflows/claude.yml` for `@claude` mentions in this repo.
+- `/update-dev-env` syncs `dependabot.yml` (create if missing, otherwise merge) and reminds to sync
+  `.gitignore` together with `scripts/release.py`.
+
+### Security
+- Cookiecutter evaluates option values as unsandboxed Jinja. `{{`, `{%` and `{#` are now rejected in
+  the project name, CLI options and `config.yaml` values (except a value identical to its shipped
+  default, such as `package_name`); generating into `.` also validates the directory name.
+- Secrets files (`.env`, `.pypirc`) are created with mode `0600` from the start via `O_EXCL`: no
+  permission window, never overwritten, symlinks never followed.
+- Release rollback state no longer uses `pickle`, so loading it cannot execute code.
+- Claude asset installers (`skills.py`, `install_claude_skills.py`) reject manifest paths that are
+  absolute, contain `..`, or fall outside the known asset directories.
+- Release and RTD workflows pass `github.ref_name` and workflow inputs through `env:` instead of
+  inline `${{ }}` expansion in shell; `update_rtd.yml` validates the `version` input.
+
+### Documentation
+- Documented `--yes` and the custom-template security warning in `docs/source/reference.md`.
+- Added the Jinja-in-option-values gotcha to `CLAUDE.md`.
+
+### Internal
+- Bumped pinned actions: checkout 7.0.1, setup-python 7.0.0, upload-artifact 7.0.2,
+  github-script 9.0.0, action-gh-release 3.0.3.
+- New tests for custom-template confirmation, Jinja rejection, secrets-file creation, rollback state
+  and asset path safety.
+
 ## [2.4.0.post1] - 2026-08-03
 
 ### Documentation
