@@ -687,39 +687,38 @@ Publishing Setup:
   - Creates GitHub repository secrets from .env tokens
 
 Examples:
-  %(prog)s my-project                                                # Basic project (UV)
-  %(prog)s --manager poetry my-project                               # Basic project (Poetry)
-  %(prog)s --local-env my-project                                    # Create local .env file with auth tokens
-  %(prog)s --github my-project                                       # Create GitHub repo
-  %(prog)s --public my-project                                       # Public GitHub repo
-  %(prog)s --public --secrets my-project                             # Public GitHub repo with secrets
-  %(prog)s --public --secrets --local-env my-project                 # Full setup
+  %(prog)s my-project                                           # Basic project (UV)
+  %(prog)s --manager poetry my-project                          # Basic project (Poetry)
+  %(prog)s --local-env my-project                               # Create local .env file with auth tokens
+  %(prog)s --github my-project                                  # Create GitHub repo
+  %(prog)s --public my-project                                  # Public GitHub repo
+  %(prog)s --public --secrets my-project                        # Public GitHub repo with secrets
+  %(prog)s --public --secrets --local-env my-project            # Full setup
 
-The project directory will be created in the current working directory. If you want to generate the project in the current
-directory, use '.' as the project name:
-  %(prog)s .                                                         # Create project in current directory
+The project directory will be created in the current working directory. If you want to generate the project
+ in the current working directory, use '.' as the project name:
+  %(prog)s .                                                    # Create project in current directory
 
 You can create the project directory first and have a project specific .env file in it to avoid using a global .env file
 """
 
 # Config command epilog
 CONFIG_EPILOG = """
-Configuration File:
-  Settings are saved to the installed package's templates/config.yaml file
-  Location varies by installation (e.g., venv/lib/python*/site-packages/generate_project/templates/config.yaml)
-  All values are used as defaults for the 'generate' command
+All values are used as defaults for the 'generate' command
 
 Examples:
   %(prog)s --author_name "John Doe"                # Set default author
   %(prog)s --author_email "john@example.com"       # Set default email
   %(prog)s --github_username "johndoe"             # Set GitHub username
-  %(prog)s --python_min_version "3.11"              # Set minimum Python version
-  %(prog)s --manager uv                             # Set default package manager to UV
+  %(prog)s --python_min_version "3.11"             # Set minimum Python version
+  %(prog)s --manager uv                            # Set default package manager to UV
 
-  # Set multiple values at once
+  Set multiple values at once
   %(prog)s --author_name "Jane Smith" --author_email "jane@example.com"
 
-  # To find the config file location do:
+Configuration File:
+  Settings are saved to the installed package's templates/config.yaml file
+  Location varies by installation. To find the config file location do:
 
 <bash>
 python -c \"""
@@ -733,24 +732,23 @@ print(Path(generate_project.main.__file__).parent / 'templates' / 'config.yaml')
 # Install-skills command epilog
 INSTALL_SKILLS_EPILOG = """
 What Gets Installed:
-  The release-docs Claude skill and the /release-docs command, which draft release
-  artifacts (commit message, tag message, CHANGELOG entry, release notes) under
-  .tmp_release_docs/ before you cut a release (consumed by scripts/release.py).
-    skills/release-docs/      The skill (SKILL.md, agents, helper scripts)
-    commands/release-docs.md  The /release-docs slash command
+  The release-docs Claude skill and the /release-docs command, which draft release artifacts
+  (commit message, tag message, CHANGELOG entry, release notes) under .tmp_release_docs/ before
+  you cut a release (consumed by scripts/release.py).
+    skills/release-docs/                                  The skill (SKILL.md, agents, helper scripts)
+    commands/release-docs.md                              The /release-docs slash command
 
 Install Destinations:
-  install-skills           Installs globally into ~/.claude (available in every repo)
-  generate --install-skills  Installs into a new project's .claude/ at generation time
-  scripts/install_claude_skills.py  Installs into an existing generated repo's .claude/
-
-  Existing files are kept; pass --force to overwrite them.
+  generate-project install-skills                         Installs globally into ~/.claude (available in every repo)
+  generate-project generate --install-skills              Installs into a new project's .claude/ at generation time
+  scripts/install_claude_skills.py                        Installs into an existing generated repo's .claude/
+Existing files are kept; pass --force to overwrite them.
 
 Examples:
-  %(prog)s                                 # Install into ~/.claude
-  %(prog)s --dry-run                       # Preview without writing anything
-  %(prog)s --force                         # Overwrite existing files
-  %(prog)s --dest ./.claude                # Install into a specific .claude directory
+  %(prog)s                         # Install into ~/.claude
+  %(prog)s --dry-run               # Preview without writing anything
+  %(prog)s --force                 # Overwrite existing files
+  %(prog)s --dest ./.claude        # Install into a specific .claude directory
 
 Documentation:
   https://generate-project.readthedocs.io/
@@ -970,7 +968,7 @@ def main() -> None:
         "install-skills",
         help="Install Claude skills and commands into ~/.claude",
         description="Install the release-docs Claude skill and /release-docs command into "
-        "your global ~/.claude directory (available in every repository).",
+        "your global ~/.claude directory",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=INSTALL_SKILLS_EPILOG,
     )
