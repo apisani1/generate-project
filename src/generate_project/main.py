@@ -85,8 +85,8 @@ def check_no_jinja(name: str, value: str, trusted: Optional[str] = None) -> str:
     """
     if value != trusted and contains_jinja(value):
         raise ValueError(
-            f"'{name}' must not contain template syntax ({', '.join(JINJA_MARKERS)}): cookiecutter would "
-            "evaluate it as code"
+            f"'{name}' must not contain template syntax ({', '.join(JINJA_MARKERS)}): "
+            "cookiecutter would evaluate it as code"
         )
     return value
 
@@ -781,7 +781,7 @@ def confirm_custom_template(template_path: Path, assume_yes: bool = False) -> bo
     if not sys.stdin.isatty():
         print_colored("Not running in a terminal; re-run with --yes to use this template.", Colors.RED)
         return False
-    return input("Use this template? [y/N] ").strip().lower() in ("y", "yes")
+    return input("Use this template? [y/n] ").strip().lower() in ("y", "yes")
 
 
 def print_args(**kwargs: Optional[Dict]) -> None:
