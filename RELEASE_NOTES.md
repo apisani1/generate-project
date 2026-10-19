@@ -1,4 +1,4 @@
-## generate-project 2.5.0rc1 (release candidate)
+## generate-project 2.5.0
 
 A security-hardening release for project generation, release tooling and CI workflows, with one
 behavior change for scripted use of `--template`.
@@ -10,6 +10,10 @@ behavior change for scripted use of `--template`.
 - **Release rollback file renamed.** `scripts/release.py` now writes `.before_last_release.json`
   instead of `.before_last_release.pkl`. Finish or roll back any in-progress release before
   upgrading. Regenerate or run `/update-dev-env` to pick up the new `release.py` and `.gitignore`.
+
+### Changed
+- `--help` output is tidier: commands are listed once, a quick-start covers every command, and
+  text fits in 80 columns.
 
 ### Added
 - `--yes` flag to skip the custom-template confirmation.
@@ -30,4 +34,4 @@ behavior change for scripted use of `--template`.
 ### Documentation
 - `--yes` and the custom-template security warning are documented in the reference.
 
-**Full changelog**: https://github.com/apisani1/generate-project/compare/v2.4.0.post1...v2.5.0rc1
+**Full changelog**: https://github.com/apisani1/generate-project/compare/v2.4.0.post1...v2.5.0
