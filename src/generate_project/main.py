@@ -650,23 +650,30 @@ def update_config_file(user_config_file_path: Path, user_config: Dict, args: Dic
         sys.exit(1)
 
 
-# Main epilog
+# Main epilog (the commands themselves are listed by argparse)
 MAIN_EPILOG = """
-Available Commands:
-  generate    Create a new Python project with UV or Poetry, testing, and CI/CD
-  config      Configure default values for project generation
+Quick start:
+  %(prog)s generate my-project          # Create a new project
+  %(prog)s config --author_name "Jane"  # Set a default value
+  %(prog)s install-skills               # Install the Claude skills
 
-Quick Start:
-  %(prog)s generate my-project                     # Create a new project
-  %(prog)s config --author_name "Your Name"        # Set default author
-
-For detailed help on each command:
-  %(prog)s generate --help
-  %(prog)s config --help
-
-Documentation:
-  https://generate-project.readthedocs.io/
+Run '%(prog)s <command> --help' for details on a command.
+Documentation: https://generate-project.readthedocs.io/
 """
+
+
+class MainHelpFormatter(argparse.RawDescriptionHelpFormatter):
+    """Keep the epilog as written, and give sub-command names room in the help column.
+
+    argparse sizes the help column without the extra indent of sub-command entries, so the
+    longest name (``install-skills``) would otherwise push its description to the next line.
+    """
+
+    def add_argument(self, action: argparse.Action) -> None:
+        super().add_argument(action)
+        if isinstance(action, argparse._SubParsersAction):
+            self._action_max_length += 2
+
 
 # Generate command epilog
 GENERATE_EPILOG = """
@@ -823,17 +830,13 @@ def main() -> None:
     # Create main parser
     parser = argparse.ArgumentParser(
         description="Create and configure Python projects with UV or Poetry.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        formatter_class=MainHelpFormatter,
         epilog=MAIN_EPILOG,
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     # Create subparsers
-    subparsers = parser.add_subparsers(
-        dest="command",
-        help="Available commands",
-        metavar="{generate,config,install-skills}",
-    )
+    subparsers = parser.add_subparsers(dest="command", title="commands", metavar="<command>")
 
     # Create the generate subparser
     generate_parser = subparsers.add_parser(
@@ -938,7 +941,7 @@ def main() -> None:
     # Create the config subparser
     config_parser = subparsers.add_parser(
         "config",
-        help="Configure default project parameters",
+        help="Set default values for project parameters",
         description="Set default values for project configuration parameters",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=CONFIG_EPILOG,
@@ -965,7 +968,7 @@ def main() -> None:
     # Create the install-skills subparser (installs the bundled Claude assets globally)
     install_skills_parser = subparsers.add_parser(
         "install-skills",
-        help="Install the bundled Claude skills/commands into ~/.claude",
+        help="Install Claude skills and commands into ~/.claude",
         description="Install the release-docs Claude skill and /release-docs command into "
         "your global ~/.claude directory (available in every repository).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
