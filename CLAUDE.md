@@ -87,7 +87,8 @@ generate-project config --author_name "Jane Doe" --email "jane@example.com" --ma
 **Key flags:**
 - `--library` — removes CLI entry point (for libraries, not apps)
 - `--supacode` — add `supacode.json` wiring Supacode's worktree lifecycle to `run.sh worktree:*`
-- `--github` / `--public` — create private/public GitHub repo (requires `gh` CLI)
+- `--github` / `--public` — create private/public GitHub repo (requires `gh` CLI); also creates the
+  Dependabot labels (`dependencies`, `github_actions`) that the templates' `dependabot.yml` asks for
 - `--secrets` — push PYPI_TOKEN, RTD_TOKEN to GitHub repo secrets
 - `--local-env` — create `.env` with token placeholders
 - `--pypirc` — create `.pypirc` with token placeholders

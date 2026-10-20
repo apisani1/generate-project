@@ -201,6 +201,8 @@ The following options are available to setup a github repository for the project
 | `--public` | Create a public github repository for the project|    
 | `--secrets` | Create repository secrets for the release management workflows |     
 
+When the repository is created, the `dependencies` and `github_actions` labels that the shipped Dependabot configuration applies to its pull requests are created as well (Dependabot only uses labels that already exist).
+
 The following repository secrets can be automatically setup: 
 
 `TEST_PYPI_TOKEN`   

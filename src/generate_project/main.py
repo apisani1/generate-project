@@ -29,6 +29,13 @@ from generate_project.skills import install_claude_skills
 
 TOKEN_NAMES = ["TEST_PYPI_TOKEN", "PYPI_TOKEN", "RTD_TOKEN"]
 
+# Labels the Dependabot config shipped in the templates puts on its PRs, as {name: (color, description)}.
+# Dependabot only applies labels that already exist in the repository, so they are created with it.
+DEPENDABOT_LABELS = {
+    "dependencies": ("0366d6", "Pull requests that update a dependency file"),
+    "github_actions": ("000000", "Pull requests that update GitHub Actions code"),
+}
+
 PYPIRC_FILE_TEMPLATE = """[distutils]
 index-servers =
     pypi
@@ -289,6 +296,9 @@ def generate_project(
 
                 print_colored(f"GitHub repository created: https://github.com/{full_repo_name}", Colors.GREEN)
 
+                # Create the labels Dependabot applies to its pull requests
+                create_github_labels(full_repo_name)
+
                 # Create secrets if requested
                 if create_secrets:
                     create_github_secrets(full_repo_name, TOKEN_NAMES)
@@ -443,6 +453,23 @@ def create_secrets_file(project_dir: Path, secrets_file: str, secrets: List[str]
             f"{secrets_file} template created at {secrets_file_path} - please update with your actual tokens",
             Colors.YELLOW,
         )
+
+
+def create_github_labels(full_repo_name: str) -> None:
+    """Create the labels used by the Dependabot config; labels that already exist are left untouched."""
+    print_colored("Creating GitHub repository labels...", Colors.BLUE)
+
+    for name, (color, description) in DEPENDABOT_LABELS.items():
+        result = run_command(
+            ["gh", "label", "create", name, "--repo", full_repo_name, "--color", color, "--description", description],
+            check=False,
+        )
+        if result.returncode == 0:
+            print_colored(f"  ✅ Created label: {name}", Colors.GREEN)
+        elif "already exists" in (result.stderr or ""):
+            print_colored(f"  ✅ Label already exists: {name}", Colors.GREEN)
+        else:
+            print_colored(f"  ⚠️  Could not create label {name}: {(result.stderr or '').strip()}", Colors.YELLOW)
 
 
 def create_github_secrets(
