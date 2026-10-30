@@ -936,7 +936,7 @@ def main() -> None:
             print(f"Successfully created release {new_version}")
             print("To complete the release:")
             print("1. Review the changes: CHANGLOG.md entry, latest commit and latest tag.")
-            print("2. Run: git push && git push --tags")
+            print("2. Run: git push && git push --follow-tags")
 
         elif args.command == "rollback":
             print("Caution: This will rollback the last release and will delete your latest commit and tag.")
